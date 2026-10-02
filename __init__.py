@@ -8,19 +8,29 @@ from robot.api.deco import keyword, not_keyword
 ROBOT_AUTO_KEYWORDS = False
 
 
-def sp_run(*args, **kwargs):
+_getStreamExceptions = set()
+@not_keyword
+def getStream():
     try:
-        stderrStream = sys.__stderr__.stream
-    except:
-        return subprocess.run(*args, **kwargs)
-    return subprocess.run(*args, stdout=stderrStream, **kwargs)
+        return sys.__stderr__.stream
+    except Exception as e:
+        e = str(e)
+        if e not in _getStreamExceptions:
+            _getStreamExceptions.add(e)
+            print2(e)
+        return None
 
+
+@not_keyword
+def sp_run(*args, **kwargs):
+    stderrStream = getStream()
+    return subprocess.run(*args, stdout=stderrStream, **kwargs) if stderrStream else subprocess.run(*args, **kwargs)
+
+
+@not_keyword
 def sp_Popen(*args, **kwargs):
-    try:
-        stderrStream = sys.__stderr__.stream
-    except:
-        return subprocess.Popen(*args, **kwargs)
-    return subprocess.Popen(*args, stdout=stderrStream, **kwargs)
+    stderrStream = getStream()
+    return subprocess.Popen(*args, stdout=stderrStream, **kwargs) if stderrStream else subprocess.Popen(*args, **kwargs)
 
 
 @not_keyword
@@ -31,8 +41,11 @@ def getVariable(varName: str):
         raise ValueError(f"Variable ${{{varName}}} is Falsey or not a string: {repr(value)}")
     return value
 
+
+@not_keyword
 def print2(*args):
     print(*args, file=sys.stderr)
+
 
 
 sshTunnelPath = Path(__file__).resolve().parent
