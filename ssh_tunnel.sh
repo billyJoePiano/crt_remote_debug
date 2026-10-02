@@ -3,7 +3,7 @@
 PID_FILE=$1
 
 SSH_PID=0
-GREP_PID=0
+#GREP_PID=0
 FINISHED_CLEANUP=No
 
 function start_tunnel() {
@@ -26,7 +26,7 @@ function cleanup() {
     fi
 
     echo "Tearing down SSH tunnel..."
-    exit_proc $GREP_PID GREP_PID
+    #exit_proc $GREP_PID GREP_PID
     exit_proc $SSH_PID SSH_PID
     FINISHED_CLEANUP=Yes
     exit 0
@@ -56,7 +56,7 @@ trap cleanup EXIT SIGINT SIGTERM SIGHUP
 while true
 do
     TZ="America/New_York" date +"%r %Z"
-    start_and_filter_tunnel
+    start_tunnel
 
     if ! PID_FILE_CONTENTS=$(cat "$PID_FILE" 2> /dev/null)
     then
