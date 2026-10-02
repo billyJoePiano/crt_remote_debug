@@ -140,6 +140,7 @@ def stop_tunnel():
     if pid is None or not psutil.pid_exists(pid):
         raise Exception(f"Tunnel already stopped")
     print2("Stopping tunnel...")
+    Path(sshTunnelBashScriptPidFile).unlink(missing_ok=True)
     os.system(f"kill {pid} >&2")
     for i in range (15):
         BuiltIn().sleep("1s")
