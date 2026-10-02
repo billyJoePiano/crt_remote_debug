@@ -1,7 +1,20 @@
 #!/bin/bash
 
 SSH_PID=0
+GREP_PID=0
 FINISHED_CLEANUP=No
+
+function start_tunnel() {
+    ssh -p 443 -R0:localhost:2222 qr+tcp@free.pinggy.io 2>&1 &
+    SSH_PID=$!
+    wait $SSH_PID
+}
+
+function start_and_filter_tunnel() {
+    start_tunnel | grep -v -P "(RB: \d+, SB: \d+, TC: \d+, AC: \d+)|(^(Pseudo-terminal will not be allocated because stdin is not a terminal\.)|(You are not authenticated\.)\$)" &
+    GREP_PID=$!
+    wait $GREP_PID
+}
 
 function cleanup() {
     if [ $FINISHED_CLEANUP == "Yes" ]
@@ -10,25 +23,29 @@ function cleanup() {
     fi
 
     echo "Tearing down SSH tunnel..."
-    if ! kill -0 $SSH_PID 2> /dev/null
+    exit_proc $GREP_PID GREP_PID
+    exit_proc $SSH_PID SSH_PID
+    FINISHED_CLEANUP=Yes
+    exit 0
+}
+
+function exit_proc() {
+    if ! kill -0 $1 2> /dev/null
     then
-        FINISHED_CLEANUP=Yes
-        exit 0
+        return 0
     fi
-    kill $SSH_PID
+    kill $1
     for i in {1..5}
     do
         sleep 1
-        if ! kill -0 $SSH_PID 2> /dev/null
+        if ! kill -0 $1 2> /dev/null
         then
             FINISHED_CLEANUP=Yes
-            exit 0
+            return 0
         fi
     done
-    echo "kill SSH_PID didn't work ... using kill -9"
-    kill -9 $SSH_PID
-    FINISHED_CLEANUP=Yes
-    exit 0
+    echo "kill $2 didn't work ... using kill -9"
+    kill -9 $1
 }
 
 trap cleanup EXIT SIGINT SIGTERM SIGHUP
@@ -36,7 +53,6 @@ trap cleanup EXIT SIGINT SIGTERM SIGHUP
 while true
 do
     TZ="America/New_York" date +"%r %Z"
-    ssh -p 443 -R0:localhost:2222 qr+tcp@free.pinggy.io &
-    SSH_PID=$!
-    wait $SSH_PID
+    start_and_filter_tunnel
+    echo "SSH tunnel closed, re-opening..."
 done
