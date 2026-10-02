@@ -1,5 +1,7 @@
 #!/bin/bash
 
+echo $$ > $1
+
 SSH_PID=0
 GREP_PID=0
 FINISHED_CLEANUP=No
