@@ -131,7 +131,7 @@ def start_tunnel():
     if pid is not None and psutil.pid_exists(pid):
         raise Exception(f"Tunnel already running, PID {pid}")
     print2("Starting tunnel...")
-    os.system(f"{shlex.quote(str(sshTunnelBashScript))} {shlex.quote(str(sshTunnelBashScriptPidFile))}")
+    os.system(f"{shlex.quote(str(sshTunnelBashScript))} {shlex.quote(str(sshTunnelBashScriptPidFile))} >&2")
 
 
 @keyword
@@ -139,8 +139,21 @@ def stop_tunnel():
     pid = getTunnelPid()
     if pid is None or not psutil.pid_exists(pid):
         raise Exception(f"Tunnel already stopped")
-    os.system(f"kill {pid}")
-
+    print2("Stopping tunnel...")
+    os.system(f"kill {pid} >&2")
+    for i in range (20):
+        BuiltIn().sleep("1s")
+        if not psutil.pid_exists(pid):
+            return
+    print2("Stopping tunnel failed, trying kill -9")
+    os.system(f"kill -9 {pid} >&2")
+    for i in range (20):
+        BuiltIn().sleep("1s")
+        if not psutil.pid_exists(pid):
+            return
+        os.system(f"kill -9 {pid} >&2")
+    if psutil.pid_exists(pid):
+       raise Exception(f"Couldn't kill PID {pid} even with kill -9") 
 
 start_sshd()
 start_tunnel()
