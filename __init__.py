@@ -141,19 +141,17 @@ def stop_tunnel():
         raise Exception(f"Tunnel already stopped")
     print2("Stopping tunnel...")
     os.system(f"kill {pid} >&2")
-    for i in range (20):
+    for i in range (15):
         BuiltIn().sleep("1s")
         if not psutil.pid_exists(pid):
             return
     print2("Stopping tunnel failed, trying kill -9")
-    os.system(f"kill -9 {pid} >&2")
-    for i in range (20):
+    for i in range (15):
+        os.system(f"kill -9 {pid} >&2")
         BuiltIn().sleep("1s")
         if not psutil.pid_exists(pid):
             return
-        os.system(f"kill -9 {pid} >&2")
-    if psutil.pid_exists(pid):
-       raise Exception(f"Couldn't kill PID {pid} even with kill -9") 
+    raise Exception(f"Couldn't kill PID {pid}, even with kill -9") 
 
 start_sshd()
 start_tunnel()
