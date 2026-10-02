@@ -1,4 +1,4 @@
-import subprocess, sys
+import subprocess, sys, os, shlex, psutil
 from pathlib import Path
 
 from robot.libraries.BuiltIn import BuiltIn
@@ -28,12 +28,6 @@ def sp_run(*args, **kwargs):
 
 
 @not_keyword
-def sp_Popen(*args, **kwargs):
-    stderrStream = getStream()
-    return subprocess.Popen(*args, stdout=stderrStream, **kwargs) if stderrStream else subprocess.Popen(*args, **kwargs)
-
-
-@not_keyword
 def getVariable(varName: str):
     BuiltIn().variable_should_exist(f"\\${{{varName}}}")
     value = BuiltIn().get_variable_value(f"\\${{{varName}}}")
@@ -46,11 +40,6 @@ def getVariable(varName: str):
 def print2(*args):
     print(*args, file=sys.stderr)
 
-
-
-sshTunnelPath = Path(__file__).resolve().parent
-sshTunnelBashScript = sshTunnelPath / "ssh_tunnel.sh"
-sp_run(["chmod", "+x", str(sshTunnelBashScript)], check=True)
 
 
 hostname = subprocess.run(["hostname"], check=True, stdout=subprocess.PIPE, text=True).stdout.strip()
@@ -88,27 +77,25 @@ KbdInteractiveAuthentication no
 
 
 #install sshd
-
+sshTunnelPath = Path(__file__).resolve().parent
 pkgPath = sshTunnelPath / "openssh-server_8.9p1-3ubuntu0.17_amd64.deb"
 checksumSshdPkg = subprocess.run(["sha256sum", str(pkgPath)], capture_output=True, text=True, check=True)
 expectedChecksum = f"2baa4f236eebc486ec351ade604f1929286ede9ec3e2858a7206ddc412e3cbb6  {pkgPath}"
 if checksumSshdPkg.stdout.rstrip() != expectedChecksum or checksumSshdPkg.stderr:
     raise Exception(f"openssh-server.deb did not match expected checksum, or produced an unexpected stderr output\nExpected checksum: {expectedChecksum}\n  Actual checksum: {checksumSshdPkg.stdout.rstrip()}\nstderr output: {checksumSshdPkg.stderr}")
 else:
-    print2(checksumSshdPkg)
+    print2(expectedChecksum)
 
 dpkgDir = sshDir / "sshd"
 sp_run(["dpkg-deb", "-x", str(pkgPath), str(dpkgDir)], check=True)
 sshdPath = dpkgDir / "usr/sbin/sshd"
 
 
-tunnelProc = None
 sshdProc = None
-
 @keyword
 def start_sshd():
     global sshdProc
-    print2(f"Starting sshd daemon as {userFq}...")
+    print2(f"Starting sshd daemon as {userFq}")
     sshdProc = sp_run([str(sshdPath), "-f", str(sshdConfigFile)], check=True)
     print2("Successfully started sshd daemon")
 
@@ -116,27 +103,43 @@ def start_sshd():
 #TODO when start_sshd runs, check whether sshd is already running using psutil
 
 
+
+sshTunnelBashScript = sshTunnelPath / "ssh_tunnel.sh"
+sshTunnelBashScriptPidFile = sshTunnelPath / "ssh_tunnel_sh.pid"
+sp_run(["chmod", "+x", str(sshTunnelBashScript)], check=True)
+
+
+@not_keyword
+def getTunnelPid() -> int|None:
+    pidFile = Path(sshTunnelBashScriptPidFile)
+    if not pidFile.exists():
+        return None
+    elif not pidFile.is_file():
+        raise Exception(f"{pidFile} exists but is not a file")
+    pid = pidFile.read_text().strip()
+    if not pid:
+        return None
+    try:
+        return int(pid)
+    except ValueError as e:
+        raise ValueError(f"Invalid process id in file {sshTunnelBashScriptPidFile} : {repr(pid)}")
+
+
 @keyword
 def start_tunnel():
-    global tunnelProc
-    if tunnelProc:
-        raise Exception("Tunnel is already running")
+    pid = getTunnelPid()
+    if pid is not None and psutil.pid_exists(pid):
+        raise Exception(f"Tunnel already running, PID {pid}")
     print2("Starting tunnel...")
-    tunnelProc = sp_Popen([str(sshTunnelBashScript)])
+    os.system(f"{shlex.quote(str(sshTunnelBashScript))} {shlex.quote(str(sshTunnelBashScriptPidFile))}")
 
 
 @keyword
 def stop_tunnel():
-    global tunnelProc
-    if tunnelProc is None:
-        raise Exception("No tunnel running")
-    print2("Stopping tunnel...")
-    tunnelProc.terminate()
-    try:
-        tunnelProc.wait(timeout=20)
-    except subprocess.TimeoutExpired:
-        tunnelProc.kill()
-    tunnelProc = None
+    pid = getTunnelPid()
+    if pid is None or not psutil.pid_exists(pid):
+        raise Exception(f"Tunnel already stopped")
+    os.system(f"kill {pid}")
 
 
 start_sshd()
