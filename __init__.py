@@ -52,7 +52,7 @@ sp_run(["chmod", "700", str(sshDir)], check=True)
 
 authorizedKeysFile = sshDir / "authorized_keys"
 @not_keyword
-def getAuthorizedKeys(userFq: str):
+def getAuthorizedKeys(userFq: str = userFq):
     lines = []
     for line in getVariable("sshAuthorizedClientsPubKeys").split("\n"):
         line = line.strip()
