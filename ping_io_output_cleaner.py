@@ -8,6 +8,8 @@ for line in sys.stdin:
         continue
     if len(line) > 0 and line[-1] == "\n":
         lineCleaned = line[:-1]
+        if len(lineCleaned) > 0 and lineCleaned[-1] == "\r":
+            lineCleaned = lineCleaned[:-1]
     else:
         lineCleaned = line
     if lineCleaned not in exclude:
