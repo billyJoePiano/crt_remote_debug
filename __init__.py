@@ -17,7 +17,7 @@ def getStream():
         e = str(e)
         if e not in _getStreamExceptions:
             _getStreamExceptions.add(e)
-            print2(e)
+            print(e, file=sys.stderr)
         return None
 
 
@@ -38,7 +38,7 @@ def getVariable(varName: str):
 
 @not_keyword
 def print2(*args):
-    print(*args, file=sys.stderr)
+    print(*args, file=getStream() or sys.stderr)
 
 
 
