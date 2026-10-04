@@ -176,7 +176,7 @@ except ImportError:
         sp_run([sys.executable, "-m", "pip", "install", "debugpy"], check=True)
         importlib.reload(site)
         import debugpy
-        debugpyImported = False
+        debugpyImported = True
     except Exception as e:
         print2(f"Exception installling or importing module debugpy: {e}")
 except Exception as e:
