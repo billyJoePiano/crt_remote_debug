@@ -10,6 +10,7 @@ function start_tunnel() {
     SSH_PID=$!
     echo -n $SSH_PID > $PID_FILE
     wait $SSH_PID
+    echo  # pingy.io ssh does not produce a final newline, and newline is needed by ping_io_output_cleaner.py
 }
 
 function cleanup() {
