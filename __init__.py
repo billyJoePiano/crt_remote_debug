@@ -58,6 +58,7 @@ def getAuthorizedKeys(userFq: str = userFq):
         line = line.strip()
         if line:
             line += " {userFq}"
+        lines.append(line)
     return "\n".join(lines) + "\n"
 authorizedKeysFile.write_text(getAuthorizedKeys(userFq))
 
