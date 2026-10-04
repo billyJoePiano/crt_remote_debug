@@ -165,5 +165,22 @@ def stop_tunnel():
             return
     raise Exception(f"Couldn't kill PID {pid}, even with kill -9") 
 
+
+try:
+    import debugpy
+except ImportError:
+    print2("Installing module debugpy")
+    try:
+        sp_run([sys.executable, "-m", "pip", "install", "debugpy"], check=True)
+    except Exception as e:
+        print2(f"Could not install module debugpy: {e}")
+    else:
+        try:
+            import debugpy
+            debugpy.listen(("localhost", 5678))
+        except Exception as e:
+            print2(f"Exception importing or starting debugpy listener: {e}")
+
+
 start_sshd()
 start_tunnel()
