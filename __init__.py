@@ -142,7 +142,7 @@ def start_tunnel():
     if pid is not None and psutil.pid_exists(pid):
         raise Exception(f"Tunnel already running, PID {pid}")
     print2("Starting tunnel...")
-    os.system(f"{shlex.quote(str(sshTunnelBashScript))} {shlex.quote(str(sshTunnelBashScriptPidFile))} 2>&1 | python {shlex.quote((str(sshTunnelOutputCleaner))} &")
+    os.system(f"{shlex.quote(str(sshTunnelBashScript))} {shlex.quote(str(sshTunnelBashScriptPidFile))} 2>&1 | python {shlex.quote(str(sshTunnelOutputCleaner))} &")
 
 
 @keyword
