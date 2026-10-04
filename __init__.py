@@ -185,6 +185,7 @@ except Exception as e:
 if debugpyImported:
     try:        
         debugpy.listen(("localhost", 5678))
+        print2("debugpy listening on localhost:5678")
     except Exception as e:
         print2(f"Exception starting debugpy listener: {e}")
 
