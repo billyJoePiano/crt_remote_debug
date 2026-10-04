@@ -1,4 +1,4 @@
-import subprocess, sys, os, shlex, psutil
+import subprocess, sys, os, shlex, psutil, site, importlib
 from pathlib import Path
 
 from robot.libraries.BuiltIn import BuiltIn
@@ -166,20 +166,27 @@ def stop_tunnel():
     raise Exception(f"Couldn't kill PID {pid}, even with kill -9") 
 
 
+debugpyImported = False
 try:
     import debugpy
+    debugpyImported = True
 except ImportError:
     print2("Installing module debugpy")
     try:
         sp_run([sys.executable, "-m", "pip", "install", "debugpy"], check=True)
+        importlib.reload(site)
+        import debugpy
+        debugpyImported = False
     except Exception as e:
-        print2(f"Could not install module debugpy: {e}")
-    else:
-        try:
-            import debugpy
-            debugpy.listen(("localhost", 5678))
-        except Exception as e:
-            print2(f"Exception importing or starting debugpy listener: {e}")
+        print2(f"Exception installling or importing module debugpy: {e}")
+except Exception as e:
+    print2(f"Unknown exception while importing debugpy: {e}")
+
+if debugpyImported:
+    try:        
+        debugpy.listen(("localhost", 5678))
+    except Exception as e:
+        print2(f"Exception starting debugpy listener: {e}")
 
 
 start_sshd()
