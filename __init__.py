@@ -51,12 +51,20 @@ sshDir.mkdir(parents=True, exist_ok=True)
 sp_run(["chmod", "700", str(sshDir)], check=True)
 
 authorizedKeysFile = sshDir / "authorized_keys"
-authorizedKeysFile.write_text(f"ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIA98UPhjY8FLkppMwQeNZAU6EW8UGKt9oB4clH5ne62X {userFq}\n")
+@not_keyword
+def getAuthorizedKeys(userFq: str):
+    lines = []
+    for line in getVariable("sshAuthorizedClientsPubKeys").split("\n"):
+        line = line.strip()
+        if line:
+            line += " {userFq}"
+    return "\n".join(lines) + "\n"
+authorizedKeysFile.write_text(getAuthorizedKeys(userFq))
 
 sshHostPrivKeyFile = sshDir / "ssh_host_key"
 sshHostPubKeyFile = sshDir / "ssh_host_key.pub"
-sshHostPrivKeyFile.write_text(getVariable("privKey").strip() + "\n")
-sshHostPubKeyFile.write_text("ssh-ed25519 " +  getVariable("pubKey").strip() + "\n")
+sshHostPrivKeyFile.write_text(getVariable("sshServerPrivKey").strip() + "\n")
+sshHostPubKeyFile.write_text(getVariable("sshServerPubKey").strip() + "\n")
 sp_run(["chmod", "600", str(sshHostPrivKeyFile)], check=True)
 sp_run(["chmod", "644", str(sshHostPubKeyFile)], check=True)
 
