@@ -12,7 +12,7 @@ _getStreamExceptions = set()
 @not_keyword
 def getStream():
     try:
-        return sys.__stderr__.stream
+        return sys.__stdout__.stream
     except Exception as e:
         e = str(e)
         if e not in _getStreamExceptions:
@@ -115,7 +115,9 @@ def start_sshd():
 
 sshTunnelBashScript = sshTunnelPath / "ssh_tunnel.sh"
 sshTunnelBashScriptPidFile = sshTunnelPath / "ssh_tunnel_sh.pid"
+sshTunnelOutputCleaner = sshTunnelPath / "ping_io_output_cleaner.py"
 sp_run(["chmod", "+x", str(sshTunnelBashScript)], check=True)
+sp_run(["chmod", "+x", str(sshTunnelOutputCleaner)], check=True)
 
 
 @not_keyword
@@ -140,7 +142,7 @@ def start_tunnel():
     if pid is not None and psutil.pid_exists(pid):
         raise Exception(f"Tunnel already running, PID {pid}")
     print2("Starting tunnel...")
-    os.system(f"{shlex.quote(str(sshTunnelBashScript))} {shlex.quote(str(sshTunnelBashScriptPidFile))} >&2 &")
+    os.system(f"{shlex.quote(str(sshTunnelBashScript))} {shlex.quote(str(sshTunnelBashScriptPidFile))} 2>&1 | python {shlex.quote((str(sshTunnelOutputCleaner))} &")
 
 
 @keyword
