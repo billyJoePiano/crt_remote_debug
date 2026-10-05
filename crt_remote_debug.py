@@ -104,10 +104,10 @@ def configure_ssh_host_key(privKey: str, pubKey: str):
 
 
 @keyword
-def configure_ssh_client(knownHosts: list[str]|str, hashKnownHosts: bool):
+def configure_ssh_client(knownHosts: list[str]|str):
     SSH_CLIENT_CONFIG_PATH.write_text(f"""
 IdentitiesOnly yes
-HashKnownHosts {"yes" if hashKnownHosts else "no"}
+ConnectTimeout 10
 Host *
     UserKnownHostsFile {str(SSH_CLIENT_KNOWN_HOSTS_PATH)}
 """)
@@ -261,7 +261,7 @@ def start_tunnel_handler(remoteUser: str, remoteHost: str, remotePort: int, *rem
     if active:
         raise Exception(f"There is currently an active tunnel process.  PID {pid}")
 
-    cmdline = ["ssh", "-NT"]
+    cmdline = ["ssh", "-NTf"]
     if identityFile:
         cmdline.append("-i")
         cmdline.append(str(identityFile))
@@ -273,7 +273,7 @@ def start_tunnel_handler(remoteUser: str, remoteHost: str, remotePort: int, *rem
     cmdline.append(str(remotePort))
     cmdlineStr = shlex.join(cmdline) + f"&\necho $! > {shlex.quote(str(TUNNEL_PID_FILE_PATH))}"
     print2(cmdlineStr)
-    os.system(cmdlineStr)
+    print2(os.system(cmdlineStr))
 
 
 @keyword
