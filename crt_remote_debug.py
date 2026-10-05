@@ -228,6 +228,7 @@ _cleanerProc = None
 @keyword
 def start_free_pinggy_io_tunnel(*remotePortForwards: str):
     #TODO implement remotePortForwards
+    sp_run(["chmod", "+x", str(SSH_TUNNEL_BASH_SCRIPT_PATH)], check=True)
     sp_run(["chmod", "+x", str(SSH_TUNNEL_OUTPUT_CLEANER_PATH)], check=True)
     pid = getTunnelPid()
     if pid is not None and psutil.pid_exists(pid):
