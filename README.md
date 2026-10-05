@@ -1,7 +1,8 @@
 RobotFramework
 ```
-    Execute                  os.system(f"git clone https://github.com/billyJoePiano/ssh_tunnel.git {_RESOURCES_PATH}/ssh_tunnel")
-    Import Library           ssh_tunnel
+    Evaluate                    subprocess.run(["git", "clone", "https://github.com/billyJoePiano/crt_remote_debug.git", f"{common._RESOURCES_PATH}/crt_remote_debug"], check=True)
+    Import Resource             ../resources/crt_remote_debug/crt_remote_debug.robot
+    Start Public Debug Tunnel
 
     #Tunnel automatically starts with import
 

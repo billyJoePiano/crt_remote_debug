@@ -165,7 +165,7 @@ def install_openssh_server(installPath: str|Path = USER_SSH_DIR_PATH / "sshd"):
 
     installPathResolved = Path(installPath).expanduser().resolve()
     sp_run(["dpkg-deb", "-x", str(OPENSSH_SERVER_DEB_PKG_PATH), str(installPathResolved)], check=True)
-    _sshdPath = installPathResolved / "/usr/sbin/sshd"
+    _sshdPath = installPathResolved / "usr/sbin/sshd"
     return str(_sshdPath)
 
 
@@ -177,12 +177,20 @@ def install_openssh_server_if_needed(installPath: str|Path = USER_SSH_DIR_PATH /
 
 
 @keyword
-def start_ssh_server():
+def start_ssh_server(timeout: int|None = 60):
+    if isinstance(timeout, str):
+        if timeout.lower() == "none":
+            timeout = None
+        else:
+            timeout = int(timeout)
+
     if _sshdPath is None:
         raise Exception("sshd not installed, call 'Install Openssh Server' keyword first")
+
     print2(f"Starting ssh server daemon as {USER_AT_HOSTNAME}")
-    sp_run([str(_sshdPath), "-f", str(SSHD_CONFIG_PATH)], check=True)
+    sp_run([str(_sshdPath), "-f", str(SSHD_CONFIG_PATH)], check=True, timeout=timeout)
     print2("Successfully started ssh server daemon")
+
 
 #TODO stop ssh server
 #TODO when start_sshd runs, check whether sshd is already running using psutil (or is this neccessary? doesn't sshd check this itself based on the PID file?)
