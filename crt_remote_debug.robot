@@ -6,6 +6,7 @@ Library                         ./crt_remote_debug.py
 # ${sshPrivKey}
 # ${sshPubKey}
 # ${sshServerAuthorizedClientsPubKeys}
+# ${sshClientKnownHosts}        # required for custom or private tunnels only, otherwise ${PINGGY_IO_SERVER_KEYHASH} is used
 # NOTE: these are commented out to prevent overwritting pre-existing values at runtime
 
 
@@ -31,7 +32,6 @@ ${sshTunnelRemoteHost}
 ${sshTunnelRemoteSshPort}
 
 
-${sshClientKnownHosts}          ${PINGGY_IO_SERVER_KEYHASH}
 ${sshClientHashKnownHosts}      ${False}
 @{sshTunnelRemotePortForwardsPublic}                        0:localhost:${localSshServerPort}                       #default for free.pinggy.io public tunnel.
 @{sshTunnelRemotePortForwardsPrivate}                       localhost:${remoteForwardedSshServerPort}:localhost:${localSshServerPort}           localhost:${remoteForwardedDebugpyPort}:localhost:${localDebugpyPort}
@@ -49,7 +49,7 @@ Configure And Start Public Debug Tunnel
 
 
     Configure Ssh Host Key      ${sshPrivKey}               ${sshPubKey}
-    Configure Ssh Client        ${sshClientKnownHosts}      ${sshClientHashKnownHosts}
+    Configure Ssh Client        ${PINGGY_IO_SERVER_KEYHASH}                             ${sshClientHashKnownHosts}
     Configure Ssh Server        ${sshServerAuthorizedClientsPubKeys}                    ${localSshServerPort}
 
     Install Openssh Server If Needed
@@ -90,5 +90,5 @@ Start Free Pinggy Io Tunnel
     Start Free Pinggy Io Tunnel Handler                     @{sshTunnelRemotePortForwardsPublic}
 
 
-Start Tunnel
-    Start Tunnel Handler        ${sshTunnelRemoteUser}               ${sshTunnelRemoteHost}               ${sshTunnelRemoteSshPort}            @{sshTunnelRemotePortForwardsPrivate}
+Start Private Tunnel
+    Start Tunnel Handler        ${sshTunnelRemoteUser}      ${sshTunnelRemoteHost}      ${sshTunnelRemoteSshPort}                               @{sshTunnelRemotePortForwardsPrivate}
