@@ -40,8 +40,6 @@ def start_tunnel(*remotePortForwards):
         cmdline.append("qr+tcp@free.pinggy.io")
         tunnelStartTime = time.monotonic()
         tunnelProc = subprocess.Popen(cmdline, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-        if tunnelProc.stdout:
-            tunnelProc.stdout.close()
         tunnelSuccess.clear()
         Thread(target=pipe_reader, args=(tunnelProc,), daemon=True).start()
         return tunnelProc
