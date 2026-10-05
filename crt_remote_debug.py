@@ -287,6 +287,7 @@ def stop_tunnel():
         BuiltIn().sleep(1) #type:ignore
         active, pid = tunnelProcCheck()
         if not active or pid is None:
+            TUNNEL_PID_FILE_PATH.unlink(missing_ok=True)
             return
     print2(f"Tunnel process SIGTERM failed after 15+ second timeout, trying SIGKILL on pid {pid}")
     for i in range(15):
@@ -294,5 +295,6 @@ def stop_tunnel():
         BuiltIn().sleep(1) #type:ignore
         active, pid = tunnelProcCheck()
         if not active or pid is None:
+            TUNNEL_PID_FILE_PATH.unlink(missing_ok=True)
             return
     raise Exception(f"Unable to stop pid {pid}")
