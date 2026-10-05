@@ -1,9 +1,10 @@
-import subprocess, sys, site, importlib, os, shlex
+import subprocess, sys, site, importlib, os, shlex, psutil, signal
 from pathlib import Path
 
 from robot.libraries.BuiltIn import BuiltIn
 from robot.libraries.Process import Process
 from robot.api.deco import keyword, not_keyword
+from typing import Literal
 
 
 
@@ -58,6 +59,7 @@ CRT_REMOTE_DEBUG_PKG_PATH = Path(__file__).resolve().parent
 OPENSSH_SERVER_DEB_PKG_PATH = CRT_REMOTE_DEBUG_PKG_PATH / "openssh-server_8.9p1-3ubuntu0.17_amd64.deb"
 OPENSSH_SERVER_DEB_PKG_EXPECTED_CHECKSUM = "2baa4f236eebc486ec351ade604f1929286ede9ec3e2858a7206ddc412e3cbb6" #sha256
 PINGGY_IO_SCRIPT_PATH = CRT_REMOTE_DEBUG_PKG_PATH / "pinggy_io.py"
+TUNNEL_PID_FILE_PATH = CRT_REMOTE_DEBUG_PKG_PATH / "tunnel.pid"
 
 
 HOSTNAME = subprocess.run(["hostname"], check=True, stdout=subprocess.PIPE, text=True).stdout.strip()
@@ -222,30 +224,70 @@ def start_debugpy(addr="localhost", port=5678, in_process_debug_adapter: bool = 
     debugpy.debug_this_thread()
 
 
-_tunnelProc: None|subprocess.Popen = None
+@keyword
+def is_tunnel_active() -> bool:
+    return tunnelProcCheck()[0]
+
+
+@not_keyword
+def tunnelProcCheck() -> tuple[bool, int|None]:
+    if not TUNNEL_PID_FILE_PATH.is_file():
+        return False, None
+    pid = TUNNEL_PID_FILE_PATH.read_text().strip()
+    if not pid:
+        return False, None
+    try:
+        pid = int(pid)
+    except ValueError as e:
+        raise ValueError(f"Invalid tunnel process id: {repr(pid)} in {str(TUNNEL_PID_FILE_PATH)}")
+    return psutil.pid_exists(pid), pid
 
 
 @keyword
 def start_free_pinggy_io_tunnel(*remotePortForwards):
-    global _tunnelProc
-    #if _tunnelProc is not None and _tunnelProc.poll() is None:
-    #    raise Exception(f"There is currently an active tunnel process.  PID {_tunnelProc.pid}")
-    #_tunnelProc = Process().start_process(sys.executable, "-u", str(PINGGY_IO_SCRIPT_PATH), *remotePortForwards)
-    os.system(f"{shlex.quote(sys.executable)} -u {shlex.quote(str(PINGGY_IO_SCRIPT_PATH))} {shlex.join(remotePortForwards)} &")
+    active, pid = tunnelProcCheck()
+    if active:
+        raise Exception(f"There is currently an active tunnel process.  PID {pid}")
+    os.system(f"{shlex.quote(sys.executable)} -u {shlex.quote(str(PINGGY_IO_SCRIPT_PATH))} {shlex.join(remotePortForwards)} &; echo \"$!\" > {shlex.quote(str(TUNNEL_PID_FILE_PATH))}")
+
+
+@keyword
+def start_tunnel(remoteUser: str, remoteHost: str, remotePort: int, *remotePortForwards: str, identityFile: str|Path = SSH_HOST_PRIV_KEY_PATH):
+    remotePort = int(remotePort)
+
+    active, pid = tunnelProcCheck()
+    if active:
+        raise Exception(f"There is currently an active tunnel process.  PID {pid}")
+
+    userAtHost = f"{remoteUser}@{remoteHost}"
+    portForwardArgs = []
+    for portForward in remotePortForwards:
+        portForwardArgs.append("-R")
+        portForwardArgs.append(portForward)
+    os.system(f"ssh -NT -i {shlex.quote(str(identityFile))} {shlex.join(portForwardArgs)} {shlex.quote(userAtHost)} -p {remotePort} &; echo \"$!\" > {shlex.quote(str(TUNNEL_PID_FILE_PATH))}")
 
 
 @keyword
 def stop_tunnel():
-    global _tunnelProc
-    if _tunnelProc is None:
-        raise Exception("There is no tunnel process to stop")
-    elif _tunnelProc.poll() is not None:
-        print2("Tunnel process has already stopped")
-    else:
-        print2("Stopping tunnel process...")
-        _tunnelProc.terminate()
-        try:
-            _tunnelProc.wait(15)
-        except TimeoutError:
-            _tunnelProc.kill()
-    _tunnelProc = None
+    active, pid = tunnelProcCheck()
+    if not active or pid is None:
+        if pid is None:
+            raise Exception("There is no tunnel process to stop")
+        else:
+            print2(f"Tunnel process has already stopped, pid {pid}")
+            return
+    print2(f"Stopping tunnel, pid {pid}")
+    os.kill(pid, signal.SIGTERM)
+    for i in range(15):
+        BuiltIn().sleep(1) #type:ignore
+        active, pid = tunnelProcCheck()
+        if not active or pid is None:
+            return
+    print2(f"Tunnel process SIGTERM failed after 15+ second timeout, trying SIGKILL on pid {pid}")
+    for i in range(15):
+        os.kill(pid, signal.SIGKILL)
+        BuiltIn().sleep(1) #type:ignore
+        active, pid = tunnelProcCheck()
+        if not active or pid is None:
+            return
+    raise Exception(f"Unable to stop pid {pid}")
