@@ -48,7 +48,7 @@ Start Public Debug Tunnel
 
     Install Openssh Server If Needed
     Start Ssh Server
-    Start Free Pinggy Io Tunnel                             @{tunnelRemovePortForwardsPublic}
+    Start Free Pinggy Io Tunnel                             @{tunnelRemotePortForwardsPublic}
     Start Debugpy               addr=localhost              port=${localDebugpyPort}
 
 
