@@ -90,7 +90,7 @@ def stop_tunnel():
     with tunnelMonitorLock:
         if tunnelProc is None:
             raise Exception("There is no tunnel process to stop")
-        print2("Stopping tunnel process...")
+        print2("pingy_io.py: Stopping tunnel process...")
         tunnelProc.terminate()
         try:
             tunnelProc.wait(10)

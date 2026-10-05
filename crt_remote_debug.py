@@ -289,7 +289,7 @@ def stop_tunnel():
             return
     print2(f"Tunnel process SIGTERM failed after 15+ second timeout, trying SIGKILL on pid {pid}")
     for i in range(15):
-        os.kill(pid, signal.SIGKILL)
+        os.kill(pid, signal.SIGKILL) #type:ignore
         BuiltIn().sleep(1) #type:ignore
         active, pid = tunnelProcCheck()
         if not active or pid is None:
