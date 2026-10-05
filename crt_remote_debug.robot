@@ -2,10 +2,11 @@
 Library                         ./crt_remote_debug.py
 
 *** Variables ***
-#required, but not commented out to prevent overwritting existing values at runtime
-#${sshPrivKey}
-#${sshPubKey}
-#${sshServerAuthorizedClientsPubKeys}
+# REQUIRED VARIABLES!  Must be set as project, robot, or test-job level variables in CRT
+# ${sshPrivKey}
+# ${sshPubKey}
+# ${sshServerAuthorizedClientsPubKeys}
+# NOTE: these are commented out to prevent overwritting pre-existing values at runtime
 
 
 # Server public key fingerprint for free.pinggy.io, which provides a free public tunnel endpoint. Used to verify the authenticity of the ping.io server when connecting to it via ssh client
