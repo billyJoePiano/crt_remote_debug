@@ -1,4 +1,4 @@
-import subprocess, sys, site, importlib, time
+import subprocess, sys, site, importlib, os, shlex
 from pathlib import Path
 
 from robot.libraries.BuiltIn import BuiltIn
@@ -227,9 +227,10 @@ _tunnelProc: None|subprocess.Popen = None
 @keyword
 def start_free_pinggy_io_tunnel(*remotePortForwards):
     global _tunnelProc
-    if _tunnelProc is not None and _tunnelProc.poll() is None:
-        raise Exception(f"There is currently an active tunnel process.  PID {_tunnelProc.pid}")
-    _tunnelProc = subprocess.Popen([sys.executable, "-u", str(PINGGY_IO_SCRIPT_PATH), *remotePortForwards])
+    #if _tunnelProc is not None and _tunnelProc.poll() is None:
+    #    raise Exception(f"There is currently an active tunnel process.  PID {_tunnelProc.pid}")
+    #_tunnelProc = subprocess.Popen([sys.executable, "-u", str(PINGGY_IO_SCRIPT_PATH), *remotePortForwards])
+    os.system(f"{shlex.quote(sys.executable)} -u {shlex.quote(str(PINGGY_IO_SCRIPT_PATH))} {shlex.join(*remotePortForwards)} &")
 
 
 @keyword
