@@ -45,7 +45,7 @@ Start Public Debug Tunnel
     Configure Ssh Client        ${sshClientKnownHosts}      ${sshClientHashKnownHosts}
     Configure Ssh Server        ${sshServerAuthorizedClientsPubKeys}                    ${localSshServerPort}
 
-    Install OpenSshServer
+    Install Openssh Server If Needed
     Start Ssh Server
     Start Free Pinggy Io Tunnel                             @{tunnelRemovePortForwardsPublic}
     Start Debugpy               addr=localhost              port=${localDebugpyPort}
@@ -67,7 +67,7 @@ Start Private Debug Tunnel
 
     IF                          ${startSshServer}
         ${localSshServerPort}=                              Convert To Integer          ${localSshServerPort}
-        Install OpenSshServer
+        Install Openssh Server If Needed
         Start Ssh Server
         Configure Ssh Server    ${sshServerAuthorizedClientsPubKeys}                    ${localSshServerPort}
     END
