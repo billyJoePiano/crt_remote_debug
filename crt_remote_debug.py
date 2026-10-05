@@ -84,8 +84,18 @@ SSH_HOST_PUB_KEY_PATH = USER_SSH_DIR_PATH / "ssh_host_key.pub"
 
 @keyword
 def configure_ssh_host_key(privKey: str, pubKey: str):
-    SSH_HOST_PRIV_KEY_PATH.write_text(privKey.strip() + "\n")
-    SSH_HOST_PUB_KEY_PATH.write_text(pubKey.strip() + "\n")
+    privKey = privKey.strip()
+    pubKey = pubKey.strip()
+    if not privKey or privKey.lower() == "none":
+        if not pubKey or pubKey.lower() == "none":
+            raise ValueError("Missing ${privKey} and ${pubKey} variable values")
+        else:
+            raise ValueError("Missing ${privKey} variable value")
+    elif not pubKey or pubKey.lower() == "none":
+        raise ValueError("Missing ${pubKey} variable value")
+
+    SSH_HOST_PRIV_KEY_PATH.write_text(privKey + "\n")
+    SSH_HOST_PUB_KEY_PATH.write_text(pubKey + "\n")
     sp_run(["chmod", "600", str(SSH_HOST_PRIV_KEY_PATH)], check=True)
     sp_run(["chmod", "644", str(SSH_HOST_PUB_KEY_PATH)], check=True)
 
