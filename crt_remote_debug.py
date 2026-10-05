@@ -271,7 +271,7 @@ def start_tunnel_handler(remoteUser: str, remoteHost: str, remotePort: int, *rem
     cmdline.append(f"{remoteUser}@{remoteHost}")
     cmdline.append("-p")
     cmdline.append(str(remotePort))
-    cmdlineStr = shlex.join(cmdline) + f"&\necho $! > {shlex.quote(str(TUNNEL_PID_FILE_PATH))}"
+    cmdlineStr = shlex.join(cmdline) + f"\necho $! > {shlex.quote(str(TUNNEL_PID_FILE_PATH))}"
     print2(cmdlineStr)
     print2(os.system(cmdlineStr))
 
