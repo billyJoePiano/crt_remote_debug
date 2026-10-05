@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import re, io, subprocess, time, signal, sys
+import re, subprocess, time, signal, sys
 from threading import Thread, RLock, Event
 
 

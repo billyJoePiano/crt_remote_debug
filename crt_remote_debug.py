@@ -225,7 +225,7 @@ _tunnelProc: None|subprocess.Popen = None
 
 
 @keyword
-def start_free_pingy_io_tunnel(*remotePortForwards):
+def start_free_pinggy_io_tunnel(*remotePortForwards):
     global _tunnelProc
     if _tunnelProc is not None and _tunnelProc.poll() is None:
         raise Exception(f"There is currently an active tunnel process.  PID {_tunnelProc.pid}")
