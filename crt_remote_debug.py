@@ -248,7 +248,7 @@ def start_free_pinggy_io_tunnel(*remotePortForwards):
     active, pid = tunnelProcCheck()
     if active:
         raise Exception(f"There is currently an active tunnel process.  PID {pid}")
-    cmdline = f"{shlex.quote(sys.executable)} -u {shlex.quote(str(PINGGY_IO_SCRIPT_PATH))} {shlex.join(remotePortForwards)} &\necho '$!' > {shlex.quote(str(TUNNEL_PID_FILE_PATH))}"
+    cmdline = f"{shlex.quote(sys.executable)} -u {shlex.quote(str(PINGGY_IO_SCRIPT_PATH))} {shlex.join(remotePortForwards)} &\necho $! > {shlex.quote(str(TUNNEL_PID_FILE_PATH))}"
     print2(cmdline)
     os.system(cmdline)
 
@@ -266,7 +266,7 @@ def start_tunnel(remoteUser: str, remoteHost: str, remotePort: int, *remotePortF
     for portForward in remotePortForwards:
         portForwardArgs.append("-R")
         portForwardArgs.append(portForward)
-    cmdline = f"ssh -NT -i {shlex.quote(str(identityFile))} {shlex.join(portForwardArgs)} {shlex.quote(userAtHost)} -p {remotePort} &\necho '$!' > {shlex.quote(str(TUNNEL_PID_FILE_PATH))}"
+    cmdline = f"ssh -NT -i {shlex.quote(str(identityFile))} {shlex.join(portForwardArgs)} {shlex.quote(userAtHost)} -p {remotePort} &\necho $! > {shlex.quote(str(TUNNEL_PID_FILE_PATH))}"
     print2(cmdline)
     os.system(cmdline)
 
