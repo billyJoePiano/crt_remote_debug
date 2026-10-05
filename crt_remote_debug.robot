@@ -38,7 +38,7 @@ ${sshClientHashKnownHosts}      ${False}
 
 
 *** Keywords ***
-Start Public Debug Tunnel
+Configure And Start Public Debug Tunnel
     # The default free.pinggy.iotunnel will forward your ssh connection from a public+ephemeral host and port to the CRT cloud container's local ssh port.
     # The public+ephemeral host and port number will be outputed by the pinggy.io server upon initiating the tunnel,
     # and will be readable via the CRT cloud container's console output
@@ -60,7 +60,7 @@ Start Public Debug Tunnel
     Start Free Pinggy Io Tunnel
 
 
-Start Private Debug Tunnel
+ Configure And Start Private Debug Tunnel
     [Arguments]                 ${startSshServer}=${True}
     # This should only be used when connecting to a private tunnel endpoint, because the debugpy port is forwarded from the tunnel endpoint without any authentication and is unencrypted
     # Typically, a private tunnel would be created through port-forwarding the incoming ssh connection via your home/office router to your local workstation.
@@ -87,10 +87,8 @@ Start Private Debug Tunnel
 
 
 Start Free Pinggy Io Tunnel
-    [Arguments]                 @{remotePortForwards}=@{sshTunnelRemotePortForwardsPublic}
-    Start Free Pinggy Io Tunnel Handler                     @{remotePortForwards}
+    Start Free Pinggy Io Tunnel Handler                     @{sshTunnelRemotePortForwardsPublic}
 
 
 Start Tunnel
-    [Arguments]                 ${remoteUser}=${sshTunnelRemoteUser}                    ${remoteHost}=${sshTunnelRemoteHost}                    ${remoteSshPort}=${sshTunnelRemoteSshPort}    @{remotePortForwards}=@{tunnelRemotePortForwardsPrivate}
-    Start Tunnel Handler        ${remoteUser}               ${remoteHost}               ${remoteSshPort}            @{remotePortForwards}
+    Start Tunnel Handler        ${sshTunnelRemoteUser}               ${sshTunnelRemoteHost}               ${sshTunnelRemoteSshPort}            @{sshTunnelRemotePortForwardsPrivate}
