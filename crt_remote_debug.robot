@@ -41,13 +41,12 @@ Configure And Start Public Debug Tunnel
     # The public+ephemeral host and port number will be outputed by the pinggy.io server upon initiating the tunnel,
     # and will be readable via the CRT cloud container's console output
 
-    ${sshClientHashKnownHosts}=                             Convert To Boolean          ${sshClientHashKnownHosts}
     ${localSshServerPort}=      Convert To Integer          ${localSshServerPort}
     ${localDebugpyPort}=        Convert To Integer          ${localDebugpyPort}
 
 
     Configure Ssh Host Key      ${sshPrivKey}               ${sshPubKey}
-    Configure Ssh Client        ${PINGGY_IO_SERVER_KEYHASH}                             ${sshClientHashKnownHosts}
+    Configure Ssh Client        ${PINGGY_IO_SERVER_KEYHASH}
     Configure Ssh Server        ${sshServerAuthorizedClientsPubKeys}                    ${localSshServerPort}
 
     Install Openssh Server If Needed
@@ -65,12 +64,11 @@ Configure And Start Public Debug Tunnel
     # The local workstation would be running its own ssh server that is configured to only allow connections from the known public key of the CRT cloud container,
     # (provided in the ${sshPubKey} variable), and the tunnel endpoints would only be accessible from the local workstation's "localhost" loopback interface.
 
-    ${sshClientHashKnownHosts}=                             Convert To Boolean          ${sshClientHashKnownHosts}
     ${localDebugpyPort}=        Convert To Integer          ${localDebugpyPort}
 
 
     Configure Ssh Host Key      ${sshPrivKey}               ${sshPubKey}
-    Configure Ssh Client        ${sshClientKnownHosts}      ${sshClientHashKnownHosts}
+    Configure Ssh Client        ${sshClientKnownHosts}
 
     IF                          ${startSshServer}
         ${localSshServerPort}=                              Convert To Integer          ${localSshServerPort}
