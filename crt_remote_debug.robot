@@ -73,5 +73,5 @@ Start Private Debug Tunnel
         Configure Ssh Server    ${sshServerAuthorizedClientsPubKeys}                    ${localSshServerPort}
     END
 
-    Start Tunnel                @{tunnelRemovePortForwardsPublic}
+    Start Tunnel                @{tunnelRemotePortForwardsPublic}
     Start Debugpy               addr=localhost              port=${localDebugpyPort}
