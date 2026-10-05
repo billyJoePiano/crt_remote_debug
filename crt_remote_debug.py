@@ -3,7 +3,7 @@ from pathlib import Path
 
 from robot.libraries.BuiltIn import BuiltIn
 from robot.api.deco import keyword, not_keyword
-from threading import Thread, RLock, Event
+
 
 
 ROBOT_AUTO_KEYWORDS = False
@@ -56,7 +56,7 @@ def print2(*args, **kwargs):
 CRT_REMOTE_DEBUG_PKG_PATH = Path(__file__).resolve().parent
 OPENSSH_SERVER_DEB_PKG_PATH = CRT_REMOTE_DEBUG_PKG_PATH / "openssh-server_8.9p1-3ubuntu0.17_amd64.deb"
 OPENSSH_SERVER_DEB_PKG_EXPECTED_CHECKSUM = "2baa4f236eebc486ec351ade604f1929286ede9ec3e2858a7206ddc412e3cbb6" #sha256
-SSH_TUNNEL_OUTPUT_CLEANER_PATH = CRT_REMOTE_DEBUG_PKG_PATH / "ping_io_output_cleaner.py"
+PINGGY_IO_SCRIPT_PATH = CRT_REMOTE_DEBUG_PKG_PATH / "pinggy_io.py"
 
 
 HOSTNAME = subprocess.run(["hostname"], check=True, stdout=subprocess.PIPE, text=True).stdout.strip()
@@ -221,126 +221,27 @@ def start_debugpy(addr="localhost", port=5678, in_process_debug_adapter: bool = 
     debugpy.debug_this_thread()
 
 
-_tunnelProc: subprocess.Popen|None = None
-_cleanerProc: subprocess.Popen|None = None
-_tunnelStartTime: float|None = None
+_tunnelProc: None|subprocess.Popen = None
 
-_tunnelMonitorLock = RLock()
-_tunnelSuccess = Event()
-
-@keyword
-def start_free_pinggy_io_tunnel(*remotePortForwards: str):
-    with _tunnelMonitorLock:
-        if _tunnelProc is not None or _cleanerProc is not None:
-            raise Exception("There is already a tunnel process running")
-        print2("Starting free.pinggy.io tunnel...")
-        tunnelProc = _start_pinggy_io_tunnel(*remotePortForwards)
-    if not _tunnelSuccess.wait(30):
-        with _tunnelMonitorLock:
-            if _tunnelProc is tunnelProc:
-                stop_tunnel()
-        raise Exception("Failure starting free.pinggy.io tunnel")
-    Thread(target=_pinggy_io_tunnel_monitor, args=[tunnelProc, *remotePortForwards], daemon=True).start()
-        
-
-@not_keyword
-def _start_pinggy_io_tunnel(*remotePortForwards):
-    global _tunnelProc, _cleanerProc, _tunnelStartTime
-    with _tunnelMonitorLock:
-        cmdline = ["ssh", "-p", "443"]
-        for portForward in remotePortForwards:
-            cmdline.append("-R")
-            cmdline.append(portForward)
-        cmdline.append("qr+tcp@free.pinggy.io")
-        _tunnelStartTime = time.monotonic()
-        _tunnelProc = subprocess.Popen(cmdline, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-        _cleanerProc = subprocess.Popen([sys.executable, "-u", str(SSH_TUNNEL_OUTPUT_CLEANER_PATH)], stdin=_tunnelProc.stdout, stdout=subprocess.PIPE, text=True)
-        if _tunnelProc.stdout:
-            _tunnelProc.stdout.close()
-        _tunnelSuccess.clear()
-        Thread(target=_pinggy_io_pipe_reader, args=(_tunnelProc, _cleanerProc), daemon=True).start()
-        return _tunnelProc
-
-
-def _pinggy_io_pipe_reader(tunnelProc: subprocess.Popen, cleanerProc: subprocess.Popen):
-    if not cleanerProc.stdout:
-        print2("_pinggy_io_pipe_reader: unexpected, no stdout on cleanerProc, exiting")
-        return
-    try:
-        for line in iter(cleanerProc.stdout.readline, ""):
-            print2(line, end="")
-            if line[:6] == "tcp://" and "pinggy-free.link" in line:
-                with _tunnelMonitorLock:
-                    if _tunnelProc is tunnelProc and _cleanerProc is cleanerProc:
-                        _tunnelSuccess.set()
-                    else:
-                        print2("_pinggy_io_pipe_reader: unexpected, tunnelProc/cleanerProc have been replaced, exiting")
-                        break
-    except Exception as e:
-        print2(f"_pinggy_io_pipe_reader: EXCEPTION: {e}")
-    finally:
-        cleanerProc.stdout.close()
-
-
-def _pinggy_io_tunnel_monitor(tunnelProc, *remotePortForwards):
-    global _tunnelProc, _cleanerProc, _tunnelStartTime
-    retryCount = 0
-    try:
-        while True:
-            with _tunnelMonitorLock:
-                if tunnelProc is not _tunnelProc:
-                    print2("_pinggy_io_tunnel_monitor: unexpected, tunnelProc has been replaced, exiting")
-                    return
-
-            tunnelProc.wait()
-            endTime = time.monotonic()
-
-            with _tunnelMonitorLock:
-                if tunnelProc is not _tunnelProc: #signal from main thread that stop_tunnel() was run, so this thread should exit
-                    return
-                elif _tunnelStartTime is None or endTime - _tunnelStartTime < 60:
-                    retryCount += 1
-                    if retryCount < 3:
-                        print2("_pinggy_io_tunnel_monitor: unexpected, tunnel run time was less than 60 seconds (or _tunnelStartTime was reverted to None) ... retrying ...")
-                    else:
-                        print2("_pinggy_io_tunnel_monitor: unexpected, tunnel run time was less than 60 seconds (or _tunnelStartTime was reverted to None) for 3 or more consecutive retries, exiting monitor loop")
-                        return
-                else:
-                    print2("free.pinggy.io tunnel closed, re-opening...")
-                    retryCount = 0
-                
-                tunnelProc = _start_pinggy_io_tunnel(*remotePortForwards)
-
-            if not _tunnelSuccess.wait(30):
-                print2("_pinggy_io_tunnel_monitor: Failure starting free.pinggy.io tunnel, exiting")
-                with _tunnelMonitorLock:
-                    if _tunnelProc is tunnelProc:
-                        stop_tunnel()
-    except Exception as e:
-        print2(f"_pinggy_io_tunnel_monitor: EXCEPTION: {e}")
-        with _tunnelMonitorLock:
-            if _tunnelProc is tunnelProc:
-                stop_tunnel()
+def start_free_pingy_io_tunnel(*remotePortForwards):
+    global _tunnelProc
+    if _tunnelProc is not None and _tunnelProc.poll() is None:
+        raise Exception(f"There is currently an active tunnel process.  PID {_tunnelProc.pid}")
+    _tunnelProc = subprocess.Popen([sys.executable, "-u", str(PINGGY_IO_SCRIPT_PATH), *remotePortForwards])
 
 
 @keyword
 def stop_tunnel():
-    global _tunnelProc, _cleanerProc, _tunnelStartTime
-    with _tunnelMonitorLock:
-        if _tunnelProc is None:
-            raise Exception("There is no tunnel process to stop")
+    global _tunnelProc
+    if _tunnelProc is None:
+        raise Exception("There is no tunnel process to stop")
+    elif _tunnelProc.poll() is not None:
+        print2("Tunnel process has already stopped")
+    else:
         print2("Stopping tunnel process...")
         _tunnelProc.terminate()
         try:
             _tunnelProc.wait(15)
         except TimeoutError:
             _tunnelProc.kill()
-        _tunnelProc = None
-        _tunnelStartTime = None
-        if _cleanerProc:
-            _cleanerProc.terminate()
-            try:
-                _cleanerProc.wait(15)
-            except TimeoutError:
-                _cleanerProc.kill()
-            _cleanerProc = None
+    _tunnelProc = None
