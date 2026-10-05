@@ -230,7 +230,7 @@ def start_free_pinggy_io_tunnel(*remotePortForwards):
     #if _tunnelProc is not None and _tunnelProc.poll() is None:
     #    raise Exception(f"There is currently an active tunnel process.  PID {_tunnelProc.pid}")
     #_tunnelProc = subprocess.Popen([sys.executable, "-u", str(PINGGY_IO_SCRIPT_PATH), *remotePortForwards])
-    os.system(f"{shlex.quote(sys.executable)} -u {shlex.quote(str(PINGGY_IO_SCRIPT_PATH))} {shlex.join(*remotePortForwards)} &")
+    os.system(f"{shlex.quote(sys.executable)} -u {shlex.quote(str(PINGGY_IO_SCRIPT_PATH))} {shlex.join(remotePortForwards)} &")
 
 
 @keyword
