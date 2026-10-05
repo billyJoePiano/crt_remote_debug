@@ -240,7 +240,7 @@ def start_free_pinggy_io_tunnel(*remotePortForwards: str):
             if _tunnelProc is tunnelProc:
                 stop_tunnel()
         raise Exception("Failure starting free.pinggy.io tunnel")
-    Thread(target=_pinggy_io_tunnel_monitor, args=[tunnelProc, *remotePortForwards]).start()
+    Thread(target=_pinggy_io_tunnel_monitor, args=[tunnelProc, *remotePortForwards], daemon=True).start()
         
 
 @not_keyword
