@@ -83,7 +83,7 @@ Configure And Start Public Debug Tunnel
 
     Start Debugpy               addr=localhost              port=${localDebugpyPort}
 
-    Start Tunnel
+    Start Private Tunnel
 
 
 Start Free Pinggy Io Tunnel
