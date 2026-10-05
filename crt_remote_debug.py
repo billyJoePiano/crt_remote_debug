@@ -223,6 +223,8 @@ def start_debugpy(addr="localhost", port=5678, in_process_debug_adapter: bool = 
 
 _tunnelProc: None|subprocess.Popen = None
 
+
+@keyword
 def start_free_pingy_io_tunnel(*remotePortForwards):
     global _tunnelProc
     if _tunnelProc is not None and _tunnelProc.poll() is None:
