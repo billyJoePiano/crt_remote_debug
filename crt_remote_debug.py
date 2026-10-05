@@ -244,7 +244,7 @@ def tunnelProcCheck() -> tuple[bool, int|None]:
 
 
 @keyword
-def start_free_pinggy_io_tunnel(*remotePortForwards):
+def start_free_pinggy_io_tunnel_handler(*remotePortForwards):
     active, pid = tunnelProcCheck()
     if active:
         raise Exception(f"There is currently an active tunnel process.  PID {pid}")
@@ -254,7 +254,7 @@ def start_free_pinggy_io_tunnel(*remotePortForwards):
 
 
 @keyword
-def start_tunnel(remoteUser: str, remoteHost: str, remotePort: int, *remotePortForwards: str, identityFile: str|Path = SSH_HOST_PRIV_KEY_PATH):
+def start_tunnel_handler(remoteUser: str, remoteHost: str, remotePort: int, *remotePortForwards: str, identityFile: str|Path = SSH_HOST_PRIV_KEY_PATH):
     remotePort = int(remotePort)
 
     active, pid = tunnelProcCheck()
@@ -279,6 +279,7 @@ def stop_tunnel():
             raise Exception("There is no tunnel process to stop")
         else:
             print2(f"Tunnel process has already stopped, pid {pid}")
+            TUNNEL_PID_FILE_PATH.unlink(missing_ok=True)
             return
     print2(f"Stopping tunnel, pid {pid}")
     os.kill(pid, signal.SIGTERM)

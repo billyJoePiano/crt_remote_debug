@@ -33,8 +33,8 @@ ${sshTunnelRemoteSshPort}
 
 ${sshClientKnownHosts}          ${PINGGY_IO_SERVER_KEYHASH}
 ${sshClientHashKnownHosts}      ${False}
-@{tunnelRemotePortForwardsPublic}                           0:localhost:${localSshServerPort}    #default for free.pinggy.io public tunnel.
-@{tunnelRemotePortForwardsPrivate}                          localhost:${remoteForwardedSshServerPort}:localhost:${localSshServerPort}    localhost:${remoteForwardedDebugpyPort}:localhost:${localDebugpyPort}
+@{sshTunnelRemotePortForwardsPublic}                        0:localhost:${localSshServerPort}                       #default for free.pinggy.io public tunnel.
+@{sshTunnelRemotePortForwardsPrivate}                       localhost:${remoteForwardedSshServerPort}:localhost:${localSshServerPort}           localhost:${remoteForwardedDebugpyPort}:localhost:${localDebugpyPort}
 
 
 *** Keywords ***
@@ -57,7 +57,7 @@ Start Public Debug Tunnel
 
     Start Debugpy               addr=localhost              port=${localDebugpyPort}
 
-    Start Free Pinggy Io Tunnel                             @{tunnelRemotePortForwardsPublic}
+    Start Free Pinggy Io Tunnel
 
 
 Start Private Debug Tunnel
@@ -83,4 +83,14 @@ Start Private Debug Tunnel
 
     Start Debugpy               addr=localhost              port=${localDebugpyPort}
 
-    Start Tunnel                ${sshTunnelRemoteUser}      ${sshTunnelRemoteHost}    ${sshTunnelRemoteSshPort}    @{tunnelRemotePortForwardsPrivate}
+    Start Tunnel
+
+
+Start Free Pinggy Io Tunnel
+    [Arguments]                 @{remotePortForwards}=@{sshTunnelRemotePortForwardsPublic}
+    Start Free Pinggy Io Tunnel Handler                     @{remotePortForwards}
+
+
+Start Tunnel
+    [Arguments]                 ${remoteUser}=${sshTunnelRemoteUser}                    ${remoteHost}=${sshTunnelRemoteHost}                    ${remoteSshPort}=${sshTunnelRemoteSshPort}    @{remotePortForwards}=@{tunnelRemotePortForwardsPrivate}
+    Start Tunnel Handler        ${remoteUser}               ${remoteHost}               ${remoteSshPort}            @{remotePortForwards}
