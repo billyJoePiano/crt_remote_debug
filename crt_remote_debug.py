@@ -271,7 +271,7 @@ def start_tunnel_handler(remoteUser: str, remoteHost: str, remotePort: int, *rem
     cmdline.append(f"{remoteUser}@{remoteHost}")
     cmdline.append("-p")
     cmdline.append(str(remotePort))
-    cmdlineStr = shlex.join(cmdline) + f"""
+    cmdlineStr = shlex.join(cmdline) + f""" &
 sleep 11
 if kill -0 $!
 then
