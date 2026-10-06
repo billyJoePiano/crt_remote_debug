@@ -279,7 +279,7 @@ PROC_ID=$!
 for i in $(seq 1 10)
 do
     sleep 1
-    if ! kill -0 $PROC_ID > /dev/null
+    if ! kill -0 $PROC_ID 2> /dev/null
     then
         exit 1
     fi
