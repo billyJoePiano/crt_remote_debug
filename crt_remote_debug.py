@@ -273,6 +273,7 @@ def start_tunnel_handler(remoteUser: str, remoteHost: str, remotePort: int, *rem
     cmdline.append(str(remotePort))
     cmdlineStr = shlex.join(cmdline)
     print2(cmdlineStr)
+    print2("Waiting 10 seconds to confirm successful SSH tunnel connection...")
     exitCode = os.system(cmdlineStr + f""" &
 PROC_ID=$!
 for i in $(seq 1 10)
