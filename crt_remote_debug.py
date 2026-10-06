@@ -261,7 +261,7 @@ def start_tunnel_handler(remoteUser: str, remoteHost: str, remotePort: int, *rem
     if active:
         raise Exception(f"There is currently an active tunnel process.  PID {pid}")
 
-    cmdline = ["ssh", "-NTf"]
+    cmdline = ["ssh", "-NT"]
     if identityFile:
         cmdline.append("-i")
         cmdline.append(str(identityFile))
@@ -271,8 +271,7 @@ def start_tunnel_handler(remoteUser: str, remoteHost: str, remotePort: int, *rem
     cmdline.append(f"{remoteUser}@{remoteHost}")
     cmdline.append("-p")
     cmdline.append(str(remotePort))
-    cmdlineStr = shlex.join(cmdline)
-    #f"echo $! > {shlex.quote(str(TUNNEL_PID_FILE_PATH))}"
+    cmdlineStr = shlex.join(cmdline) + f"\necho $! > {shlex.quote(str(TUNNEL_PID_FILE_PATH))}\nsleep 11\nkill -0 $!"
     print2(cmdlineStr)
     print2(os.system(cmdlineStr))
 
