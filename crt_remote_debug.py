@@ -271,17 +271,22 @@ def start_tunnel_handler(remoteUser: str, remoteHost: str, remotePort: int, *rem
     cmdline.append(f"{remoteUser}@{remoteHost}")
     cmdline.append("-p")
     cmdline.append(str(remotePort))
-    cmdlineStr = shlex.join(cmdline) + f""" &
-sleep 11
-if kill -0 $!
-then
-    echo $! > {shlex.quote(str(TUNNEL_PID_FILE_PATH))}
-else
-    exit 1
-fi
-"""
+    cmdlineStr = shlex.join(cmdline)
     print2(cmdlineStr)
-    print2(os.system(cmdlineStr))
+    exitCode = os.system(cmdlineStr + f""" &
+PROC_ID=$!
+for i in $(seq 1 10)
+do
+    sleep 1
+    if ! kill -0 $PROC_ID > /dev/null
+    then
+        exit 1
+    fi
+done
+echo $PROC_ID > {shlex.quote(str(TUNNEL_PID_FILE_PATH))}
+""")
+    if exitCode != 0:
+        raise Exception("SSH Tunnel failed to connect or stay connected (after 10 seconds or less)")
 
 
 @keyword
