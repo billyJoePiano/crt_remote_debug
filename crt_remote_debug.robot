@@ -32,7 +32,7 @@ ${sshTunnelRemoteHost}
 ${sshTunnelRemoteSshPort}
 
 @{sshTunnelRemotePortForwardsPublic}                        0:localhost:${localSshServerPort}                       #default for free.pinggy.io public tunnel.
-@{sshTunnelRemotePortForwardsPrivate}                       localhost:${remoteForwardedSshServerPort}:localhost:${localSshServerPort}           localhost:${remoteForwardedDebugpyPort}:localhost:${localDebugpyPort}
+@{sshTunnelRemotePortForwardsPrivate}                       ${remoteForwardedSshServerPort}:localhost:${localSshServerPort}           ${remoteForwardedDebugpyPort}:localhost:${localDebugpyPort}
 
 
 *** Keywords ***
