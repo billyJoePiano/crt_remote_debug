@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import re, subprocess, time, signal, sys
+import re, subprocess, time, signal, sys, shlex
 from threading import Thread, RLock, Event
 
 
@@ -38,6 +38,7 @@ def start_tunnel(*remotePortForwards):
             cmdline.append("-R")
             cmdline.append(portForward)
         cmdline.append("qr+tcp@free.pinggy.io")
+        print2(shlex.join(cmdline))
         tunnelStartTime = time.monotonic()
         tunnelProc = subprocess.Popen(cmdline, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
         tunnelSuccess.clear()
@@ -133,7 +134,13 @@ def pipe_reader(proc: subprocess.Popen):
 
 
 def end_process(signum, frame):
-    stop_tunnel()
+    print2(f"pinggy_io.py: Recieved signal {signum}. Shutting down tunnel processes...")
+    if tunnelProc is not None:
+        stop_tunnel()
+        print2("pinggy_io.py: Exiting")
+    else:
+        print2(f"pinggy_io.py: No active tunnel process. Exiting")
+    sys.exit(0)
 
 
 if __name__ == "__main__":

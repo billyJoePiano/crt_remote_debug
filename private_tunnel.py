@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import sys, subprocess, signal
+import sys, subprocess, signal, shlex, time
 from pathlib import Path
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from threading import Thread, Event, RLock
@@ -29,6 +29,7 @@ def tunnel_monitor():
         if tunnelProc is not None:
             raise Exception("private_tunnel.py tunnel_monitor(): tunnelProc variable was not None")
         FLAG.clear()
+        print2(shlex.join(CMD_LINE))
         tunnelProc = subprocess.Popen(CMD_LINE)
         Thread(target=proc_init_check, args=[tunnelProc], daemon=True).start()
         while True:
@@ -66,10 +67,12 @@ def proc_init_check(tunnelProc: subprocess.Popen):
 
 
 def end_process(signum, frame):
-    if tunnelProc is None:
-        return
     print2(f"private_tunnel.py: Recieved signal {signum}. Shutting down tunnel processes...")
-    stop_tunnel()
+    if tunnelProc is not None:
+        stop_tunnel()
+        print2("private_tunnel.py: Exiting")
+    else:
+        print2("private_tunnel.py: No active tunnel process. Exiting")
     sys.exit(0)
 
 
@@ -86,4 +89,5 @@ class HTTPHandler(BaseHTTPRequestHandler):
 
 if __name__ == "__main__":
     Thread(target=httpd, daemon=True).start()
+    signal.signal(signal.SIGTERM, end_process)
     tunnel_monitor()
