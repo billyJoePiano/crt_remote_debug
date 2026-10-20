@@ -314,8 +314,10 @@ def stop_tunnel():
 
 
 @keyword
-def start_http_file_server(port: int):
-    port = int(port)
+def start_http_file_server(port: int|None = None):
+    if port is None:
+        port = BuiltIn().get_variable_value(r"\${localHttpFileServerPort}", 8000) #type: ignore
+    port = int(port) #type: ignore
     active, pid = httpdProcCheck()
     if active:
         raise Exception(f"There is currently an active http file server process.  PID {pid}")
@@ -325,8 +327,10 @@ def start_http_file_server(port: int):
 
 
 @keyword
-def start_http_file_server_if_needed(port: int):
-    port = int(port)
+def start_http_file_server_if_needed(port: int|None = None):
+    if port is None:
+        port = BuiltIn().get_variable_value(r"\${localHttpFileServerPort}", 8000) #type: ignore
+    port = int(port) #type: ignore
     active, pid = httpdProcCheck()
     if active:
         print2(f"There is currently an active http file server process.  PID {pid}")
