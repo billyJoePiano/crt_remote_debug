@@ -25,6 +25,7 @@ def print2(*args, **kwargs):
 
 def tunnel_monitor():
     global tunnelProc
+    consecutiveFailures = 0
     while True:
         if tunnelProc is not None:
             raise Exception("private_tunnel.py tunnel_monitor(): tunnelProc variable was not None")
@@ -32,18 +33,29 @@ def tunnel_monitor():
         print2(shlex.join(CMD_LINE))
         tunnelProc = subprocess.Popen(CMD_LINE)
         Thread(target=proc_init_check, args=[tunnelProc], daemon=True).start()
+        success = False
         while True:
             flag = FLAG.wait(15)
             FLAG.clear()
             status = tunnelProc.poll()
             if status is not None:
-                print2(f"SSH client process exited unexpectedly with exit code {status}.  Shutting down private_tunnel.py")
+                print2(f"private_tunnel.py tunnel_monitor(): SSH client process exited unexpectedly with exit code {status}")
                 tunnelProc = None
-                sys.exit(1)
-            elif not flag:
+                break
+            elif flag:
+                success = True
+            else:
                 print2("SSH tunnel seems to be dead... restarting")
                 stop_tunnel()
                 break
+        if success:
+            consecutiveFailures = 0
+        else:
+            consecutiveFailures += 1
+            if consecutiveFailures > 2:
+                print2("private_tunnel.py tunnel_monitor(): 3 or more consecutive failures to establish a tunnel.  Exiting private_tunnel.py")
+                #signal.signal(signal.SIGTERM, signal.SIG_DFL) # remove signal handler.  not sure if this is neccessary to prevent duplicate exit messages?
+                sys.exit(1)
 
 
 def stop_tunnel():
