@@ -319,7 +319,7 @@ def start_http_file_server(port: int):
     active, pid = httpdProcCheck()
     if active:
         raise Exception(f"There is currently an active http file server process.  PID {pid}")
-    cmdline = f"{shlex.quote(sys.executable)} -u -m http.server -d / localhost:{port} &\n\necho $! > {shlex.quote(str(HTTP_SERVER_PID_FILE_PATH))}"
+    cmdline = f"{shlex.quote(sys.executable)} -u -m http.server -d / -b localhost {port} &\n\necho $! > {shlex.quote(str(HTTP_SERVER_PID_FILE_PATH))}"
     print2(cmdline)
     os.system(cmdline)
 
