@@ -61,6 +61,7 @@ OPENSSH_SERVER_DEB_PKG_EXPECTED_CHECKSUM = "2baa4f236eebc486ec351ade604f1929286e
 PINGGY_IO_SCRIPT_PATH = CRT_REMOTE_DEBUG_PKG_PATH / "pinggy_io.py"
 PRIVATE_TUNNEL_SCRIPT_PATH = CRT_REMOTE_DEBUG_PKG_PATH / "private_tunnel.py"
 TUNNEL_MONITOR_PID_FILE_PATH = CRT_REMOTE_DEBUG_PKG_PATH / "tunnel.pid"
+HTTP_SERVER_PID_FILE_PATH = CRT_REMOTE_DEBUG_PKG_PATH / "httpd.pid"
 
 
 HOSTNAME = subprocess.run(["hostname"], check=True, stdout=subprocess.PIPE, text=True).stdout.strip()
@@ -244,6 +245,20 @@ def tunnelProcCheck() -> tuple[bool, int|None]:
     return psutil.pid_exists(pid), pid
 
 
+@not_keyword
+def httpdProcCheck() -> tuple[bool, int|None]:
+    if not HTTP_SERVER_PID_FILE_PATH.is_file():
+        return False, None
+    pid = HTTP_SERVER_PID_FILE_PATH.read_text().strip()
+    if not pid:
+        return False, None
+    try:
+        pid = int(pid)
+    except ValueError as e:
+        raise ValueError(f"Invalid http file server process id: {repr(pid)} in {str(HTTP_SERVER_PID_FILE_PATH)}")
+    return psutil.pid_exists(pid), pid
+
+
 @keyword
 def start_free_pinggy_io_tunnel_handler(*remotePortForwards):
     active, pid = tunnelProcCheck()
@@ -294,5 +309,57 @@ def stop_tunnel():
         active, pid = tunnelProcCheck()
         if not active or pid is None:
             TUNNEL_MONITOR_PID_FILE_PATH.unlink(missing_ok=True)
+            return
+    raise Exception(f"Unable to stop pid {pid}")
+
+
+@keyword
+def start_http_file_server(port: int):
+    port = int(port)
+    active, pid = httpdProcCheck()
+    if active:
+        raise Exception(f"There is currently an active http file server process.  PID {pid}")
+    cmdline = f"{shlex.quote(sys.executable)} -u -m http.server -d / {port} &\n\necho $! > {shlex.quote(str(HTTP_SERVER_PID_FILE_PATH))}"
+    print2(cmdline)
+    os.system(cmdline)
+
+
+@keyword
+def start_http_file_server_if_needed(port: int):
+    port = int(port)
+    active, pid = httpdProcCheck()
+    if active:
+        print2(f"There is currently an active http file server process.  PID {pid}")
+        return
+    cmdline = f"{shlex.quote(sys.executable)} -u -m http.server -d / {port} &\n\necho $! > {shlex.quote(str(HTTP_SERVER_PID_FILE_PATH))}"
+    print2(cmdline)
+    os.system(cmdline)
+
+
+@keyword
+def stop_http_file_server():
+    active, pid = httpdProcCheck()
+    if not active or pid is None:
+        if pid is None:
+            raise Exception("There is no http file server process to stop")
+        else:
+            print2(f"Http file server process has already stopped, pid {pid}")
+            HTTP_SERVER_PID_FILE_PATH.unlink(missing_ok=True)
+            return
+    print2(f"Stopping http file server, pid {pid}")
+    os.kill(pid, signal.SIGTERM)
+    for i in range(15):
+        BuiltIn().sleep(1) #type:ignore
+        active, pid = httpdProcCheck()
+        if not active or pid is None:
+            HTTP_SERVER_PID_FILE_PATH.unlink(missing_ok=True)
+            return
+    print2(f"Http file server process SIGTERM failed after 15+ second timeout, trying SIGKILL on pid {pid}")
+    for i in range(15):
+        os.kill(pid, signal.SIGKILL) #type:ignore
+        BuiltIn().sleep(1) #type:ignore
+        active, pid = httpdProcCheck()
+        if not active or pid is None:
+            HTTP_SERVER_PID_FILE_PATH.unlink(missing_ok=True)
             return
     raise Exception(f"Unable to stop pid {pid}")

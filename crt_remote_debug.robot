@@ -24,12 +24,12 @@ ${PINGGY_IO_SERVER_KEYHASH}     |1|D/2nTwnJjvwViCqC+er4b6gZuWI=|tkb6jKufo0pkRHwN
 # local ports for the CRT cloud container
 ${localSshServerPort}           2222
 ${localDebugpyPort}             5678
-${localHttpFileBrowserPort}                       8000
+${localHttpFileServerPort}                       8000
 ${localHttpAlivePort}                             8888
 
 ${remoteForwardedSshServerPort}                             2222
 ${remoteForwardedDebugpyPort}                               5678
-${remoteForwardedHttpFileBrowserPort}                       8000
+${remoteForwardedHttpFileServerPort}                       8000
 ${remoteForwardedHttpAlivePort}                             8888
 
 
@@ -39,6 +39,8 @@ ${sshTunnelRemoteSshPort}
 
 @{sshTunnelRemotePortForwardsPublic}                        0:localhost:${localSshServerPort}                       #default for free.pinggy.io public tunnel.
 @{sshTunnelRemotePortForwardsPrivate}                       ${remoteForwardedSshServerPort}:localhost:${localSshServerPort}           ${remoteForwardedDebugpyPort}:localhost:${localDebugpyPort}
+# @{sshTunnelRemotePortForwardsPrivate} is no longer used.  Remote port forwards are hardcoded into private_tunnel.py
+
 
 
 *** Keywords ***
@@ -83,6 +85,7 @@ Configure And Start Public Debug Tunnel
         Start Ssh Server
     END
 
+    Start Http File Server      ${localHttpFileServerPort}
     Start Debugpy               addr=localhost              port=${localDebugpyPort}
 
     Start Private Tunnel
