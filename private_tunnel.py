@@ -102,6 +102,9 @@ class HTTPHandler(BaseHTTPRequestHandler):
     def log_message(self, format: str, *args: Any) -> None:
         pass
 
+    def log_request(self, code: int | str = "-", size: int | str = "-") -> None:
+        pass
+
 
 if __name__ == "__main__":
     Thread(target=httpd, daemon=True).start()
