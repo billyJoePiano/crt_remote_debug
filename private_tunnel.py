@@ -74,7 +74,7 @@ def end_process(signum, frame):
 
 
 def httpd():
-    HTTPServer(('', HTTP_ALIVE_LISTENER_PORT), HTTPHandler).serve_forever()
+    HTTPServer(('localhost', HTTP_ALIVE_LISTENER_PORT), HTTPHandler).serve_forever()
 
 
 class HTTPHandler(BaseHTTPRequestHandler):
