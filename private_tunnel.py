@@ -4,6 +4,7 @@ import sys, subprocess, signal, shlex, time
 from pathlib import Path
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from threading import Thread, Event, RLock
+from typing import Any
 
 
 USER_SSH_DIR_PATH = Path("~/.ssh").expanduser().resolve()
@@ -97,6 +98,9 @@ class HTTPHandler(BaseHTTPRequestHandler):
         FLAG.set()
         self.send_response_only(200)
         self.end_headers()
+
+    def log_message(self, format: str, *args: Any) -> None:
+        pass
 
 
 if __name__ == "__main__":
