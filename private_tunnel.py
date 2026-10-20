@@ -16,7 +16,6 @@ PORT_FORWARD_ARGS = tuple(f"-R{remote}:localhost:{local}" for remote, local in P
 CMD_LINE = ("ssh", "-i", str(SSH_HOST_PRIV_KEY_PATH), *PORT_FORWARD_ARGS, sys.argv[1], "-p", sys.argv[2])
 
 FLAG = Event()
-LOCK = RLock()
 
 tunnelProc: subprocess.Popen|None = None
 
@@ -29,14 +28,12 @@ def tunnel_monitor():
     while True:
         if tunnelProc is not None:
             raise Exception("private_tunnel.py tunnel_monitor(): tunnelProc variable was not None")
-        with LOCK:
-            FLAG.clear()
+        FLAG.clear()
         tunnelProc = subprocess.Popen(CMD_LINE)
         Thread(target=proc_init_check, args=[tunnelProc], daemon=True).start()
         while True:
-            with LOCK:
-                flag = FLAG.wait(15)
-                FLAG.clear()
+            flag = FLAG.wait(15)
+            FLAG.clear()
             status = tunnelProc.poll()
             if status is not None:
                 print2(f"SSH client process exited unexpectedly with exit code {status}.  Shutting down private_tunnel.py")
@@ -82,8 +79,7 @@ def httpd():
 
 class HTTPHandler(BaseHTTPRequestHandler):
     def do_GET(self):
-        with LOCK:
-            FLAG.set()
+        FLAG.set()
         self.send_response_only(200)
         self.end_headers()
 
