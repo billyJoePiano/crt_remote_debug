@@ -279,7 +279,7 @@ def start_private_tunnel_handler(remoteUser: str, remoteHost: str, remotePort: i
     if active:
         raise Exception(f"There is currently an active tunnel monitor process.  PID {pid}")
 
-    cmdline = f"{shlex.quote(sys.executable)} -u {shlex.quote(str(PRIVATE_TUNNEL_SCRIPT_PATH))} {shlex.join([f'{remoteUser}@{remoteHost}', '-p', str(remotePort)])} &\necho $! > {shlex.quote(str(TUNNEL_MONITOR_PID_FILE_PATH))}"
+    cmdline = f"{shlex.quote(sys.executable)} -u {shlex.quote(str(PRIVATE_TUNNEL_SCRIPT_PATH))} {shlex.join([f'{remoteUser}@{remoteHost}', str(remotePort)])} &\necho $! > {shlex.quote(str(TUNNEL_MONITOR_PID_FILE_PATH))}"
     print2(cmdline)
     os.system(cmdline)
 
