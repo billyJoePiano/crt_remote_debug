@@ -9,7 +9,7 @@ from threading import Thread, Event, RLock
 USER_SSH_DIR_PATH = Path("~/.ssh").expanduser().resolve()
 SSH_HOST_PRIV_KEY_PATH = USER_SSH_DIR_PATH / "ssh_host_key"
 
-HTTP_ALIVE_LISTENER_PORT = 8888
+HTTP_ALIVE_LISTENER_PORT = 9000
 PORT_FORWARDS = ((2222, 2222), (5678, 5678), (8000, 8000), (HTTP_ALIVE_LISTENER_PORT, HTTP_ALIVE_LISTENER_PORT))
 PORT_FORWARD_ARGS = tuple(f"-R{remote}:localhost:{local}" for remote, local in PORT_FORWARDS)
 
