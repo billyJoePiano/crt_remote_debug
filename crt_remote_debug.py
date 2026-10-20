@@ -59,7 +59,8 @@ CRT_REMOTE_DEBUG_PKG_PATH = Path(__file__).resolve().parent
 OPENSSH_SERVER_DEB_PKG_PATH = CRT_REMOTE_DEBUG_PKG_PATH / "openssh-server_8.9p1-3ubuntu0.17_amd64.deb"
 OPENSSH_SERVER_DEB_PKG_EXPECTED_CHECKSUM = "2baa4f236eebc486ec351ade604f1929286ede9ec3e2858a7206ddc412e3cbb6" #sha256
 PINGGY_IO_SCRIPT_PATH = CRT_REMOTE_DEBUG_PKG_PATH / "pinggy_io.py"
-TUNNEL_PID_FILE_PATH = CRT_REMOTE_DEBUG_PKG_PATH / "tunnel.pid"
+PRIVATE_TUNNEL_SCRIPT_PATH = CRT_REMOTE_DEBUG_PKG_PATH / "private_tunnel.py"
+TUNNEL_MONITOR_PID_FILE_PATH = CRT_REMOTE_DEBUG_PKG_PATH / "tunnel.pid"
 
 
 HOSTNAME = subprocess.run(["hostname"], check=True, stdout=subprocess.PIPE, text=True).stdout.strip()
@@ -231,15 +232,15 @@ def is_tunnel_active() -> bool:
 
 @not_keyword
 def tunnelProcCheck() -> tuple[bool, int|None]:
-    if not TUNNEL_PID_FILE_PATH.is_file():
+    if not TUNNEL_MONITOR_PID_FILE_PATH.is_file():
         return False, None
-    pid = TUNNEL_PID_FILE_PATH.read_text().strip()
+    pid = TUNNEL_MONITOR_PID_FILE_PATH.read_text().strip()
     if not pid:
         return False, None
     try:
         pid = int(pid)
     except ValueError as e:
-        raise ValueError(f"Invalid tunnel process id: {repr(pid)} in {str(TUNNEL_PID_FILE_PATH)}")
+        raise ValueError(f"Invalid tunnel monitor process id: {repr(pid)} in {str(TUNNEL_MONITOR_PID_FILE_PATH)}")
     return psutil.pid_exists(pid), pid
 
 
@@ -247,47 +248,25 @@ def tunnelProcCheck() -> tuple[bool, int|None]:
 def start_free_pinggy_io_tunnel_handler(*remotePortForwards):
     active, pid = tunnelProcCheck()
     if active:
-        raise Exception(f"There is currently an active tunnel process.  PID {pid}")
-    cmdline = f"{shlex.quote(sys.executable)} -u {shlex.quote(str(PINGGY_IO_SCRIPT_PATH))} {shlex.join(remotePortForwards)} &\necho $! > {shlex.quote(str(TUNNEL_PID_FILE_PATH))}"
+        raise Exception(f"There is currently an active tunnel monitor process.  PID {pid}")
+    cmdline = f"{shlex.quote(sys.executable)} -u {shlex.quote(str(PINGGY_IO_SCRIPT_PATH))} {shlex.join(remotePortForwards)} &\necho $! > {shlex.quote(str(TUNNEL_MONITOR_PID_FILE_PATH))}"
     print2(cmdline)
     os.system(cmdline)
 
 
 @keyword
-def start_tunnel_handler(remoteUser: str, remoteHost: str, remotePort: int, *remotePortForwards: str, identityFile: str|Path|None = SSH_HOST_PRIV_KEY_PATH):
+def start_private_tunnel_handler(remoteUser: str, remoteHost: str, remotePort: int):
+    # NOTE: remote port forwards are hard-coded into private_tunnel.py
+    # client identity will be the same private key used by sshd server
     remotePort = int(remotePort)
 
     active, pid = tunnelProcCheck()
     if active:
-        raise Exception(f"There is currently an active tunnel process.  PID {pid}")
+        raise Exception(f"There is currently an active tunnel monitor process.  PID {pid}")
 
-    cmdline = ["ssh", "-NT"]
-    if identityFile:
-        cmdline.append("-i")
-        cmdline.append(str(identityFile))
-    for portForward in remotePortForwards:
-        cmdline.append("-R")
-        cmdline.append(portForward)
-    cmdline.append(f"{remoteUser}@{remoteHost}")
-    cmdline.append("-p")
-    cmdline.append(str(remotePort))
-    cmdlineStr = shlex.join(cmdline)
-    print2(cmdlineStr)
-    print2("Waiting 10 seconds to confirm successful SSH tunnel connection...")
-    exitCode = os.system(cmdlineStr + f""" &
-PROC_ID=$!
-for i in $(seq 1 10)
-do
-    sleep 1
-    if ! kill -0 $PROC_ID 2> /dev/null
-    then
-        exit 1
-    fi
-done
-echo $PROC_ID > {shlex.quote(str(TUNNEL_PID_FILE_PATH))}
-""")
-    if exitCode != 0:
-        raise Exception("SSH Tunnel failed to connect or stay connected (after 10 seconds or less)")
+    cmdline = f"{shlex.quote(sys.executable)} -u {shlex.quote(str(PRIVATE_TUNNEL_SCRIPT_PATH))} {shlex.join([f"{remoteUser}@{remoteHost}", "-p", str(remotePort)])} &\necho $! > {shlex.quote(str(TUNNEL_MONITOR_PID_FILE_PATH))}"
+    print2(cmdline)
+    os.system(cmdline)
 
 
 @keyword
@@ -295,10 +274,10 @@ def stop_tunnel():
     active, pid = tunnelProcCheck()
     if not active or pid is None:
         if pid is None:
-            raise Exception("There is no tunnel process to stop")
+            raise Exception("There is no tunnel monitor process to stop")
         else:
-            print2(f"Tunnel process has already stopped, pid {pid}")
-            TUNNEL_PID_FILE_PATH.unlink(missing_ok=True)
+            print2(f"Tunnel monitor process has already stopped, pid {pid}")
+            TUNNEL_MONITOR_PID_FILE_PATH.unlink(missing_ok=True)
             return
     print2(f"Stopping tunnel, pid {pid}")
     os.kill(pid, signal.SIGTERM)
@@ -306,14 +285,14 @@ def stop_tunnel():
         BuiltIn().sleep(1) #type:ignore
         active, pid = tunnelProcCheck()
         if not active or pid is None:
-            TUNNEL_PID_FILE_PATH.unlink(missing_ok=True)
+            TUNNEL_MONITOR_PID_FILE_PATH.unlink(missing_ok=True)
             return
-    print2(f"Tunnel process SIGTERM failed after 15+ second timeout, trying SIGKILL on pid {pid}")
+    print2(f"Tunnel monitor process SIGTERM failed after 15+ second timeout, trying SIGKILL on pid {pid}")
     for i in range(15):
         os.kill(pid, signal.SIGKILL) #type:ignore
         BuiltIn().sleep(1) #type:ignore
         active, pid = tunnelProcCheck()
         if not active or pid is None:
-            TUNNEL_PID_FILE_PATH.unlink(missing_ok=True)
+            TUNNEL_MONITOR_PID_FILE_PATH.unlink(missing_ok=True)
             return
     raise Exception(f"Unable to stop pid {pid}")

@@ -23,9 +23,15 @@ ${PINGGY_IO_SERVER_KEYHASH}     |1|D/2nTwnJjvwViCqC+er4b6gZuWI=|tkb6jKufo0pkRHwN
 
 # local ports for the CRT cloud container
 ${localSshServerPort}           2222
-${localDebugpyPort}             5678                        # local
+${localDebugpyPort}             5678
+${localHttpFileBrowserPort}                       8000
+${localHttpAlivePort}                             8888
+
 ${remoteForwardedSshServerPort}                             2222
 ${remoteForwardedDebugpyPort}                               5678
+${remoteForwardedHttpFileBrowserPort}                       8000
+${remoteForwardedHttpAlivePort}                             8888
+
 
 ${sshTunnelRemoteUser}
 ${sshTunnelRemoteHost}
@@ -87,4 +93,4 @@ Start Free Pinggy Io Tunnel
 
 
 Start Private Tunnel
-    Start Tunnel Handler        ${sshTunnelRemoteUser}      ${sshTunnelRemoteHost}      ${sshTunnelRemoteSshPort}                               @{sshTunnelRemotePortForwardsPrivate}
+    Start Private Tunnel Handler        ${sshTunnelRemoteUser}      ${sshTunnelRemoteHost}      ${sshTunnelRemoteSshPort}
