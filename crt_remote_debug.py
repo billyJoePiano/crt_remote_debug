@@ -190,7 +190,7 @@ def install_openssh_server(installPath: str|Path = USER_SSH_DIR_PATH / "sshd"):
     installPathResolved = Path(installPath).expanduser().resolve()
     sp_run(["dpkg-deb", "-x", str(OPENSSH_SERVER_DEB_PKG_PATH), str(installPathResolved)], check=True)
     _sshdPath = installPathResolved / "usr/sbin/sshd"
-    _sshdLibDirPath = installPathResolved / "usr/lib"
+    _sshdLibDirPath = installPathResolved / "usr/lib/openssh"
     return str(_sshdPath)
 
 
