@@ -7,6 +7,9 @@ from threading import Thread, Event, RLock
 from typing import Any
 
 
+USER_LOCAL_PATH = Path("~/.local").expanduser().resolve()
+SSH_CLIENT_PATH = USER_LOCAL_PATH / "usr/bin/ssh"
+
 USER_SSH_DIR_PATH = Path("~/.ssh").expanduser().resolve()
 SSH_HOST_PRIV_KEY_PATH = USER_SSH_DIR_PATH / "ssh_host_key"
 
@@ -14,7 +17,7 @@ HTTP_ALIVE_LISTENER_PORT = 9000
 PORT_FORWARDS = ((2222, 2222), (5678, 5678), (8000, 8000), (HTTP_ALIVE_LISTENER_PORT, HTTP_ALIVE_LISTENER_PORT))
 PORT_FORWARD_ARGS = tuple(f"-R{remote}:localhost:{local}" for remote, local in PORT_FORWARDS)
 
-CMD_LINE = ("ssh", "-i", str(SSH_HOST_PRIV_KEY_PATH), *PORT_FORWARD_ARGS, sys.argv[1], "-p", sys.argv[2])
+CMD_LINE = (str(SSH_CLIENT_PATH), "-i", str(SSH_HOST_PRIV_KEY_PATH), *PORT_FORWARD_ARGS, sys.argv[1], "-p", sys.argv[2])
 
 FLAG = Event()
 

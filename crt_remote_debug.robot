@@ -54,6 +54,7 @@ Configure And Start Public Debug Tunnel
 
 
     Configure Ssh Host Key      ${sshPrivKey}               ${sshPubKey}
+    Install Openssh Client
     Configure Ssh Client        ${PINGGY_IO_SERVER_KEYHASH}
 
     Install Openssh Server If Needed
@@ -76,6 +77,7 @@ Configure And Start Public Debug Tunnel
 
 
     Configure Ssh Host Key      ${sshPrivKey}               ${sshPubKey}
+    Install Openssh Client
     Configure Ssh Client        ${sshClientKnownHosts}
 
     IF                          ${startSshServer}

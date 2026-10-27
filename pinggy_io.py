@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
 import re, subprocess, time, signal, sys, shlex
 from threading import Thread, RLock, Event
+from pathlib import Path
 
+USER_LOCAL_PATH = Path("~/.local").expanduser().resolve()
+SSH_CLIENT_PATH = USER_LOCAL_PATH / "usr/bin/ssh"
 
 tunnelProc: subprocess.Popen|None = None
 tunnelStartTime: float|None = None
@@ -33,7 +36,7 @@ def init(*remotePortForwards: str):
 def start_tunnel(*remotePortForwards):
     global tunnelProc, tunnelStartTime
     with tunnelMonitorLock:
-        cmdline = ["ssh", "-p", "443"]
+        cmdline = [SSH_CLIENT_PATH, "-p", "443"]
         for portForward in remotePortForwards:
             cmdline.append("-R")
             cmdline.append(portForward)

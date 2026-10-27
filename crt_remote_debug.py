@@ -61,6 +61,7 @@ CRT_REMOTE_DEBUG_PKG_PATH = Path(__file__).resolve().parent
 # OPENSSH_SERVER_DEB_PKG_PATH = CRT_REMOTE_DEBUG_PKG_PATH / "openssh-server_8.9p1-3ubuntu0.17_amd64.deb"
 # OPENSSH_SERVER_DEB_PKG_EXPECTED_CHECKSUM = "2baa4f236eebc486ec351ade604f1929286ede9ec3e2858a7206ddc412e3cbb6"
 
+OPENSSH_CLIENT_DEB_PKG_PATH = CRT_REMOTE_DEBUG_PKG_PATH / "openssh-client_10.2p1-2ubuntu3.8_amd64v3.deb"
 OPENSSH_SERVER_DEB_PKG_PATH = CRT_REMOTE_DEBUG_PKG_PATH / "openssh-server_10.2p1-2ubuntu3.8_amd64v3.deb"
 OPENSSH_SERVER_DEB_PKG_EXPECTED_CHECKSUM = "d77954e865ba47c59d746e128ad649a81e82c3f648a49f4cbbf0a0a440867e17"
 PINGGY_IO_SCRIPT_PATH = CRT_REMOTE_DEBUG_PKG_PATH / "pinggy_io.py"
@@ -76,6 +77,13 @@ USER_AT_HOSTNAME = f"{USER}@{HOSTNAME}" # user fully-qualified name
 USER_SSH_DIR_PATH = Path("~/.ssh").expanduser().resolve()
 USER_SSH_DIR_PATH.mkdir(parents=True, exist_ok=True)
 sp_run(["chmod", "700", str(USER_SSH_DIR_PATH)], check=True)
+
+# binary paths (after installation)
+USER_LOCAL_PATH = Path("~/.local").expanduser().resolve()
+USER_LOCAL_PATH.mkdir(parents=True, exist_ok=True)
+SSHD_PATH = USER_LOCAL_PATH / "usr/sbin/sshd"
+SSHD_LIB_DIR_PATH = USER_LOCAL_PATH / "usr/lib/openssh"
+SSH_CLIENT_PATH = USER_LOCAL_PATH / "usr/bin/ssh"
 
 # ssh client configuration files
 SSH_CLIENT_CONFIG_PATH = USER_SSH_DIR_PATH / "config"
@@ -109,6 +117,13 @@ def configure_ssh_host_key(privKey: str, pubKey: str):
     sp_run(["chmod", "644", str(SSH_HOST_PUB_KEY_PATH)], check=True)
 
 
+_sshClientInstalled: bool = False
+@keyword
+def install_openssh_client():
+    global _sshClientInstalled
+    sp_run(["dpkg-deb", "-x", str(OPENSSH_CLIENT_DEB_PKG_PATH), str(USER_LOCAL_PATH)], check=True)
+    _sshClientInstalled = True
+
 
 @keyword
 def configure_ssh_client(knownHosts: list[str]|str):
@@ -135,17 +150,40 @@ def ssh_client_add_known_hosts(knownHosts: list[str]|str):
         f.write(knownHosts)
 
 
+_sshdInstalled: bool = False
+@keyword
+def install_openssh_server():
+    global _sshdInstalled
+    checksumProc = subprocess.run(["sha256sum", str(OPENSSH_SERVER_DEB_PKG_PATH)], capture_output=True, text=True, check=True)
+    expectedChecksum = f"{OPENSSH_SERVER_DEB_PKG_EXPECTED_CHECKSUM}  {str(OPENSSH_SERVER_DEB_PKG_PATH)}"
+    if checksumProc.stdout.rstrip() != expectedChecksum or checksumProc.stderr:
+        raise Exception(f"openssh-server debian package ({OPENSSH_SERVER_DEB_PKG_EXPECTED_CHECKSUM}) did not match expected checksum, or checksum process produced an unexpected stderr output\nExpected checksum: {expectedChecksum}\n  Actual checksum: {checksumProc.stdout.rstrip()}\nstderr output: {checksumProc.stderr}")
+    else:
+        print2(expectedChecksum)
+
+    sp_run(["dpkg-deb", "-x", str(OPENSSH_SERVER_DEB_PKG_PATH), str(USER_LOCAL_PATH)], check=True)
+    _sshdInstalled = True
+    return str(SSHD_PATH)
+
+
+@keyword
+def install_openssh_server_if_needed():
+    if not _sshdInstalled:
+        return install_openssh_server()
+    return str(SSHD_PATH)
+
+
 @keyword
 def configure_ssh_server(authorizedClientsPubKeys: list[str]|str, listenPort: int):
-    if _sshdPath is None or _sshdLibDirPath is None:
+    if not _sshdInstalled:
         raise Exception("sshd not installed, call 'Install Openssh Server' keyword first")
     SSHD_CONFIG_PATH.write_text(f"""
 Port {listenPort}
 HostKey {str(SSH_HOST_PRIV_KEY_PATH)}
 PidFile {str(SSHD_PID_PATH)}
 AuthorizedKeysFile {str(SSHD_AUTHORIZED_KEYS_PATH)}
-SshdSessionPath {str(_sshdLibDirPath)}/sshd-session
-SshdAuthPath {str(_sshdLibDirPath)}/sshd-auth
+SshdSessionPath {str(SSHD_LIB_DIR_PATH)}/sshd-session
+SshdAuthPath {str(SSHD_LIB_DIR_PATH)}/sshd-auth
 StrictModes no
 PubkeyAuthentication yes
 PasswordAuthentication no
@@ -175,32 +213,6 @@ def makeAuthorizedKeysContents(authorizedClientsPubKeys: list[str], userFq: str 
     return "\n".join(lines) + "\n"
 
 
-_sshdPath: Path|None = None
-_sshdLibDirPath: Path|None = None
-@keyword
-def install_openssh_server(installPath: str|Path = USER_SSH_DIR_PATH / "sshd"):
-    global _sshdPath, _sshdLibDirPath
-    checksumProc = subprocess.run(["sha256sum", str(OPENSSH_SERVER_DEB_PKG_PATH)], capture_output=True, text=True, check=True)
-    expectedChecksum = f"{OPENSSH_SERVER_DEB_PKG_EXPECTED_CHECKSUM}  {str(OPENSSH_SERVER_DEB_PKG_PATH)}"
-    if checksumProc.stdout.rstrip() != expectedChecksum or checksumProc.stderr:
-        raise Exception(f"openssh-server debian package ({OPENSSH_SERVER_DEB_PKG_EXPECTED_CHECKSUM}) did not match expected checksum, or checksum process produced an unexpected stderr output\nExpected checksum: {expectedChecksum}\n  Actual checksum: {checksumProc.stdout.rstrip()}\nstderr output: {checksumProc.stderr}")
-    else:
-        print2(expectedChecksum)
-
-    installPathResolved = Path(installPath).expanduser().resolve()
-    sp_run(["dpkg-deb", "-x", str(OPENSSH_SERVER_DEB_PKG_PATH), str(installPathResolved)], check=True)
-    _sshdPath = installPathResolved / "usr/sbin/sshd"
-    _sshdLibDirPath = installPathResolved / "usr/lib/openssh"
-    return str(_sshdPath)
-
-
-@keyword
-def install_openssh_server_if_needed(installPath: str|Path = USER_SSH_DIR_PATH / "sshd"):
-    if _sshdPath is None:
-        return install_openssh_server(installPath)
-    return str(_sshdPath)
-
-
 @keyword
 def start_ssh_server(timeout: int|None = 60):
     if isinstance(timeout, str):
@@ -209,12 +221,11 @@ def start_ssh_server(timeout: int|None = 60):
         else:
             timeout = int(timeout)
 
-    if _sshdPath is None or _sshdLibDirPath is None:
+    if not _sshdInstalled:
         raise Exception("sshd not installed, call 'Install Openssh Server' keyword first")
 
     print2(f"Starting ssh server daemon as {USER_AT_HOSTNAME}")
-    # sp_run([str(_sshdPath), "-f", str(SSHD_CONFIG_PATH)], check=True, timeout=timeout) # with Ubuntu 26.04 upgrade, a new cmd arg is needed, to point to the sshd-session binary directory
-    sp_run([str(_sshdPath), "-f", str(SSHD_CONFIG_PATH)], check=True, timeout=timeout)
+    sp_run([str(SSHD_PATH), "-f", str(SSHD_CONFIG_PATH)], check=True, timeout=timeout)
     print2("Successfully started ssh server daemon")
 
 
