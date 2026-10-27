@@ -175,7 +175,7 @@ _sshdPath: Path|None = None
 _sshdLibDirPath: Path|None = None
 @keyword
 def install_openssh_server(installPath: str|Path = USER_SSH_DIR_PATH / "sshd"):
-    global _sshdPath
+    global _sshdPath, _sshdLibDirPath
     checksumProc = subprocess.run(["sha256sum", str(OPENSSH_SERVER_DEB_PKG_PATH)], capture_output=True, text=True, check=True)
     expectedChecksum = f"{OPENSSH_SERVER_DEB_PKG_EXPECTED_CHECKSUM}  {str(OPENSSH_SERVER_DEB_PKG_PATH)}"
     if checksumProc.stdout.rstrip() != expectedChecksum or checksumProc.stderr:
