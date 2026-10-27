@@ -55,9 +55,9 @@ Configure And Start Public Debug Tunnel
 
     Configure Ssh Host Key      ${sshPrivKey}               ${sshPubKey}
     Configure Ssh Client        ${PINGGY_IO_SERVER_KEYHASH}
-    Configure Ssh Server        ${sshServerAuthorizedClientsPubKeys}                    ${localSshServerPort}
 
     Install Openssh Server If Needed
+    Configure Ssh Server        ${sshServerAuthorizedClientsPubKeys}                    ${localSshServerPort}
     Start Ssh Server
 
     Start Debugpy               addr=localhost              port=${localDebugpyPort}

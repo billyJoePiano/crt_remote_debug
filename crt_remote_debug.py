@@ -137,11 +137,15 @@ def ssh_client_add_known_hosts(knownHosts: list[str]|str):
 
 @keyword
 def configure_ssh_server(authorizedClientsPubKeys: list[str]|str, listenPort: int):
+    if _sshdPath is None or _sshdLibDirPath is None:
+        raise Exception("sshd not installed, call 'Install Openssh Server' keyword first")
     SSHD_CONFIG_PATH.write_text(f"""
 Port {listenPort}
 HostKey {str(SSH_HOST_PRIV_KEY_PATH)}
 PidFile {str(SSHD_PID_PATH)}
 AuthorizedKeysFile {str(SSHD_AUTHORIZED_KEYS_PATH)}
+SshdSessionPath {str(_sshdLibDirPath)}/sshd-session
+SshdAuthPath {str(_sshdLibDirPath)}/sshd-auth
 StrictModes no
 PubkeyAuthentication yes
 PasswordAuthentication no
@@ -186,7 +190,7 @@ def install_openssh_server(installPath: str|Path = USER_SSH_DIR_PATH / "sshd"):
     installPathResolved = Path(installPath).expanduser().resolve()
     sp_run(["dpkg-deb", "-x", str(OPENSSH_SERVER_DEB_PKG_PATH), str(installPathResolved)], check=True)
     _sshdPath = installPathResolved / "usr/sbin/sshd"
-    _sshdLibDirPath = installPath / "usr/lib"
+    _sshdLibDirPath = installPathResolved / "usr/lib"
     return str(_sshdPath)
 
 
@@ -210,15 +214,7 @@ def start_ssh_server(timeout: int|None = 60):
 
     print2(f"Starting ssh server daemon as {USER_AT_HOSTNAME}")
     # sp_run([str(_sshdPath), "-f", str(SSHD_CONFIG_PATH)], check=True, timeout=timeout) # with Ubuntu 26.04 upgrade, a new cmd arg is needed, to point to the sshd-session binary directory
-    sp_run(
-        [
-            str(_sshdPath),
-            "-f", str(SSHD_CONFIG_PATH),
-            "-o", f"SessionSession={_sshdLibDirPath}/sshd-session",
-            "-o", f"AuthSession={_sshdLibDirPath}/sshd-auth"
-        ],
-        check=True, timeout=timeout
-    )
+    sp_run([str(_sshdPath), "-f", str(SSHD_CONFIG_PATH)], check=True, timeout=timeout)
     print2("Successfully started ssh server daemon")
 
 
