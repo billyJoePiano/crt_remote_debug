@@ -210,7 +210,15 @@ def start_ssh_server(timeout: int|None = 60):
 
     print2(f"Starting ssh server daemon as {USER_AT_HOSTNAME}")
     # sp_run([str(_sshdPath), "-f", str(SSHD_CONFIG_PATH)], check=True, timeout=timeout) # with Ubuntu 26.04 upgrade, a new cmd arg is needed, to point to the sshd-session binary directory
-    sp_run([str(_sshdPath), "-f", str(SSHD_CONFIG_PATH), "-g", str(_sshdLibDirPath)], check=True, timeout=timeout)
+    sp_run(
+        [
+            str(_sshdPath),
+            "-f", str(SSHD_CONFIG_PATH),
+            "-o", f"SessionSession={_sshdLibDirPath}/sshd-session",
+            "-o", f"AuthSession={_sshdLibDirPath}/sshd-auth"
+        ],
+        check=True, timeout=timeout
+    )
     print2("Successfully started ssh server daemon")
 
 
