@@ -172,6 +172,7 @@ def makeAuthorizedKeysContents(authorizedClientsPubKeys: list[str], userFq: str 
 
 
 _sshdPath: Path|None = None
+_sshdLibDirPath: Path|None = None
 @keyword
 def install_openssh_server(installPath: str|Path = USER_SSH_DIR_PATH / "sshd"):
     global _sshdPath
@@ -185,6 +186,7 @@ def install_openssh_server(installPath: str|Path = USER_SSH_DIR_PATH / "sshd"):
     installPathResolved = Path(installPath).expanduser().resolve()
     sp_run(["dpkg-deb", "-x", str(OPENSSH_SERVER_DEB_PKG_PATH), str(installPathResolved)], check=True)
     _sshdPath = installPathResolved / "usr/sbin/sshd"
+    _sshdLibDirPath = installPath / "usr/lib"
     return str(_sshdPath)
 
 
@@ -203,11 +205,12 @@ def start_ssh_server(timeout: int|None = 60):
         else:
             timeout = int(timeout)
 
-    if _sshdPath is None:
+    if _sshdPath is None or _sshdLibDirPath is None:
         raise Exception("sshd not installed, call 'Install Openssh Server' keyword first")
 
     print2(f"Starting ssh server daemon as {USER_AT_HOSTNAME}")
-    sp_run([str(_sshdPath), "-f", str(SSHD_CONFIG_PATH)], check=True, timeout=timeout)
+    # sp_run([str(_sshdPath), "-f", str(SSHD_CONFIG_PATH)], check=True, timeout=timeout) # with Ubuntu 26.04 upgrade, a new cmd arg is needed, to point to the sshd-session binary directory
+    sp_run([str(_sshdPath), "-f", str(SSHD_CONFIG_PATH), "-g", str(_sshdLibDirPath)], check=True, timeout=timeout)
     print2("Successfully started ssh server daemon")
 
 
