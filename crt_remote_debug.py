@@ -64,6 +64,7 @@ CRT_REMOTE_DEBUG_PKG_PATH = Path(__file__).resolve().parent
 OPENSSH_CLIENT_DEB_PKG_PATH = CRT_REMOTE_DEBUG_PKG_PATH / "openssh-client_10.2p1-2ubuntu3.8_amd64v3.deb"
 OPENSSH_SERVER_DEB_PKG_PATH = CRT_REMOTE_DEBUG_PKG_PATH / "openssh-server_10.2p1-2ubuntu3.8_amd64v3.deb"
 OPENSSH_SERVER_DEB_PKG_EXPECTED_CHECKSUM = "d77954e865ba47c59d746e128ad649a81e82c3f648a49f4cbbf0a0a440867e17"
+LIBWRAP_DEB_PKG_PATH = CRT_REMOTE_DEBUG_PKG_PATH / "libwrap0_7.6.q-36build2_amd64.deb"
 PINGGY_IO_SCRIPT_PATH = CRT_REMOTE_DEBUG_PKG_PATH / "pinggy_io.py"
 PRIVATE_TUNNEL_SCRIPT_PATH = CRT_REMOTE_DEBUG_PKG_PATH / "private_tunnel.py"
 TUNNEL_MONITOR_PID_FILE_PATH = CRT_REMOTE_DEBUG_PKG_PATH / "tunnel.pid"
@@ -162,6 +163,7 @@ def install_openssh_server():
         print2(expectedChecksum)
 
     sp_run(["dpkg-deb", "-x", str(OPENSSH_SERVER_DEB_PKG_PATH), str(USER_LOCAL_PATH)], check=True)
+    sp_run(["dpkg-deb", "-x", str(LIBWRAP_DEB_PKG_PATH), str(USER_LOCAL_PATH)], check=True)
     _sshdInstalled = True
     return str(SSHD_PATH)
 
@@ -189,6 +191,8 @@ PubkeyAuthentication yes
 PasswordAuthentication no
 KbdInteractiveAuthentication no
 """)
+#OnlyUserAuthentication yes
+#UsePAM no
     ssh_server_add_authorized_keys(authorizedClientsPubKeys)
 
 
