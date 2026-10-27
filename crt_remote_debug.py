@@ -84,6 +84,7 @@ USER_LOCAL_PATH = Path("~/.local").expanduser().resolve()
 USER_LOCAL_PATH.mkdir(parents=True, exist_ok=True)
 SSHD_PATH = USER_LOCAL_PATH / "usr/sbin/sshd"
 SSHD_LIB_DIR_PATH = USER_LOCAL_PATH / "usr/lib/openssh"
+SSHD_LIBWRAP_PATH = USER_LOCAL_PATH / "usr/lib/x86_64-linux-gnu" # directory for libwrap.so.0
 SSH_CLIENT_PATH = USER_LOCAL_PATH / "usr/bin/ssh"
 
 # ssh client configuration files
@@ -230,7 +231,9 @@ def start_ssh_server(timeout: int|None = 60):
 
     print2(f"Starting ssh server daemon as {USER_AT_HOSTNAME}")
     #sp_run([str(SSHD_PATH), "-f", str(SSHD_CONFIG_PATH)], check=True, timeout=timeout)
-    os.system(shlex.join([str(SSHD_PATH), "-f", str(SSHD_CONFIG_PATH), "-d"]) + " &")
+    cmdline = "LD_LIBRARY_PATH=" + shlex.quote(str(SSHD_LIBWRAP_PATH)) + " " + shlex.join([str(SSHD_PATH), "-f", str(SSHD_CONFIG_PATH), "-d"]) + " &"
+    print2(cmdline)
+    os.system(cmdline)
     print2("Successfully started ssh server daemon")
 
 
