@@ -238,9 +238,6 @@ def start_ssh_server(timeout: int|None = 60):
 
     print2(f"Starting ssh server daemon as {USER_AT_HOSTNAME}")
     sp_run([str(SSHD_PATH), "-f", str(SSHD_CONFIG_PATH)], check=True, timeout=timeout, env=envvars)
-    #cmdline = "LD_LIBRARY_PATH=" + shlex.quote(str(SSHD_LIBWRAP_PATH)) + " " + shlex.join([str(SSHD_PATH), "-f", str(SSHD_CONFIG_PATH), "-d"]) + " &"
-    #print2(cmdline)
-    #os.system(cmdline)
     print2("Successfully started ssh server daemon")
 
 
