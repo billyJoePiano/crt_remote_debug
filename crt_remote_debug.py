@@ -225,7 +225,8 @@ def start_ssh_server(timeout: int|None = 60):
         raise Exception("sshd not installed, call 'Install Openssh Server' keyword first")
 
     print2(f"Starting ssh server daemon as {USER_AT_HOSTNAME}")
-    sp_run([str(SSHD_PATH), "-f", str(SSHD_CONFIG_PATH), "-d"], check=True, timeout=timeout)
+    #sp_run([str(SSHD_PATH), "-f", str(SSHD_CONFIG_PATH)], check=True, timeout=timeout)
+    os.system(shlex.join([str(SSHD_PATH), "-f", str(SSHD_CONFIG_PATH), "-d"]) + " &")
     print2("Successfully started ssh server daemon")
 
 
