@@ -229,11 +229,18 @@ def start_ssh_server(timeout: int|None = 60):
     if not _sshdInstalled:
         raise Exception("sshd not installed, call 'Install Openssh Server' keyword first")
 
+    # add to environmental variables, so sshd can find libwrap.so.0
+    envvars = os.environ | {}
+    if "LD_LIBRARY_PATH" in envvars:
+        envvars["LD_LIBRARY_PATH"] = envvars["LD_LIBRARY_PATH"] + f":{SSHD_LIBWRAP_PATH!s}"
+    else:
+        envvars["LD_LIBRARY_PATH"] = str(SSHD_LIBWRAP_PATH)
+
     print2(f"Starting ssh server daemon as {USER_AT_HOSTNAME}")
-    #sp_run([str(SSHD_PATH), "-f", str(SSHD_CONFIG_PATH)], check=True, timeout=timeout)
-    cmdline = "LD_LIBRARY_PATH=" + shlex.quote(str(SSHD_LIBWRAP_PATH)) + " " + shlex.join([str(SSHD_PATH), "-f", str(SSHD_CONFIG_PATH), "-d"]) + " &"
-    print2(cmdline)
-    os.system(cmdline)
+    sp_run([str(SSHD_PATH), "-f", str(SSHD_CONFIG_PATH)], check=True, timeout=timeout, env=envvars)
+    #cmdline = "LD_LIBRARY_PATH=" + shlex.quote(str(SSHD_LIBWRAP_PATH)) + " " + shlex.join([str(SSHD_PATH), "-f", str(SSHD_CONFIG_PATH), "-d"]) + " &"
+    #print2(cmdline)
+    #os.system(cmdline)
     print2("Successfully started ssh server daemon")
 
 
